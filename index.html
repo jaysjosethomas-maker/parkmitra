@@ -1,0 +1,1824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParkMitra — Urban Parking Operating System</title>
+  <!-- Google Fonts: Space Grotesk, Plus Jakarta Sans, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Tailwind Configuration for ParkMitra Tokens -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            pm: {
+              deepBlue: '#0B4057',
+              secBlue: '#1F617C',
+              gold: '#D5A343',
+              terracotta: '#C77F6C',
+              slate: '#657783',
+              bg: '#F5F7F6',
+              surface: '#FFFFFF',
+              textPrimary: '#071A24',
+              textSecondary: '#42545E'
+            }
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            heading: ['Space Grotesk', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --pm-deep-blue: #0B4057;
+      --pm-sec-blue: #1F617C;
+      --pm-gold: #D5A343;
+      --pm-terracotta: #C77F6C;
+      --pm-slate: #657783;
+      --pm-bg: #F5F7F6;
+      --pm-surface: #FFFFFF;
+      --pm-text-primary: #071A24;
+      --pm-text-secondary: #42545E;
+    }
+
+    body {
+      background-color: var(--pm-bg);
+      color: var(--pm-text-primary);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Technical Blueprint Grid Background */
+    .blueprint-grid {
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, rgba(11, 64, 87, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(11, 64, 87, 0.05) 1px, transparent 1px);
+    }
+
+    /* Blueprint Map Canvas Container */
+    .blueprint-map-container {
+      background-color: #061D28;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+      background-size: 40px 40px;
+      position: relative;
+    }
+
+    /* Technical Corner Registration Marks */
+    .tech-corner-box {
+      position: relative;
+    }
+    .tech-corner-box::before, .tech-corner-box::after {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .tech-corner-box::before {
+      top: -1px;
+      left: -1px;
+      border-top: 2px solid #0B4057;
+      border-left: 2px solid #0B4057;
+    }
+    .tech-corner-box::after {
+      bottom: -1px;
+      right: -1px;
+      border-bottom: 2px solid #0B4057;
+      border-right: 2px solid #0B4057;
+    }
+
+    .tech-corner-box-white::before { border-color: #FFFFFF; }
+    .tech-corner-box-white::after { border-color: #FFFFFF; }
+
+    /* Map Interactive Markers */
+    .blueprint-marker {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 20;
+    }
+    .blueprint-marker:hover {
+      transform: translate(-50%, -50%) scale(1.12);
+      z-index: 50;
+    }
+    .blueprint-marker.active-selected {
+      transform: translate(-50%, -50%) scale(1.22);
+      z-index: 60;
+    }
+
+    /* Technical Card Styling */
+    .pm-card {
+      border: 1px solid rgba(11, 64, 87, 0.25);
+      background: #FFFFFF;
+      border-radius: 2px;
+      box-shadow: 0 1px 3px rgba(7, 26, 36, 0.05);
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .pm-card:hover {
+      border-color: rgba(11, 64, 87, 0.6);
+      box-shadow: 0 4px 12px rgba(11, 64, 87, 0.08);
+    }
+
+    .pm-gold-accent {
+      border-left: 3px solid #D5A343;
+    }
+
+    /* Technical Buttons */
+    .pm-btn-primary {
+      background: #0B4057;
+      color: #FFFFFF;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      border-radius: 2px;
+      padding: 7px 14px;
+      border: 1px solid #0B4057;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .pm-btn-primary:hover {
+      background: #1F617C;
+      border-color: #1F617C;
+    }
+
+    .pm-btn-secondary {
+      background: #FFFFFF;
+      color: #0B4057;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      border-radius: 2px;
+      padding: 7px 14px;
+      border: 1px solid #0B4057;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .pm-btn-secondary:hover {
+      background: #F0F6F9;
+    }
+
+    /* Pulse animation for radar sweeper */
+    @keyframes radarSweep {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .radar-sweeper {
+      transform-origin: center;
+      animation: radarSweep 10s linear infinite;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F5F7F6;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #657783;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #0B4057;
+    }
+  </style>
+</head>
+<body class="blueprint-grid min-h-screen flex flex-col antialiased selection:bg-pm-gold/30">
+
+  <!-- TOP HEADER / OPERATING SYSTEM BAR -->
+  <header class="bg-pm-deepBlue text-white border-b border-pm-deepBlue/40 sticky top-0 z-50 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
+      
+      <!-- Brand & OS Identity -->
+      <div class="flex items-center space-x-3">
+        <div class="w-8 h-8 bg-pm-gold flex items-center justify-center font-mono font-bold text-pm-deepBlue text-base border border-white/20">
+          ⌖
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-heading font-bold text-lg tracking-wider text-white">PARKMITRA</span>
+            <span class="bg-white/10 text-pm-gold font-mono text-[10px] px-1.5 py-0.5 rounded border border-pm-gold/30 uppercase tracking-widest">BENGALURU URBAN OS</span>
+          </div>
+          <p class="text-[11px] text-pm-slate font-mono flex items-center gap-1.5">
+            <span>FIND IT. PARK IT. TRUST IT.</span>
+            <span class="text-white/30">•</span>
+            <span class="text-emerald-400 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-ping"></span>
+              50+ BENGALURU NODES LIVE
+            </span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Surface Switcher Tabs -->
+      <nav class="hidden md:flex items-center space-x-1 bg-white/5 p-1 border border-white/10 text-xs font-mono">
+        <button id="tab-driver" onclick="switchSurface('driver')" class="surface-tab px-3 py-1.5 bg-pm-gold text-pm-deepBlue font-bold flex items-center gap-1.5 transition-all">
+          <span>🚗</span> DRIVER OS
+        </button>
+        <button id="tab-host" onclick="switchSurface('host')" class="surface-tab px-3 py-1.5 text-white/80 hover:text-white hover:bg-white/10 flex items-center gap-1.5 transition-all">
+          <span>🏠</span> HOST / OWNER
+        </button>
+        <button id="tab-civic" onclick="switchSurface('civic')" class="surface-tab px-3 py-1.5 text-white/80 hover:text-white hover:bg-white/10 flex items-center gap-1.5 transition-all">
+          <span>🏛️</span> CIVIC COMMAND
+        </button>
+        <button id="tab-admin" onclick="switchSurface('admin')" class="surface-tab px-3 py-1.5 text-white/80 hover:text-white hover:bg-white/10 flex items-center gap-1.5 transition-all">
+          <span>⚙️</span> ADMIN OPERATIONS
+        </button>
+      </nav>
+
+      <!-- DEMO SCENARIOS DROPDOWN & CLOCK -->
+      <div class="flex items-center space-x-3">
+        <!-- Interactive Demo Runner Dropdown -->
+        <div class="relative">
+          <select id="demo-scenario-select" onchange="runSelectedDemo(this.value)" class="bg-pm-gold text-pm-deepBlue font-mono font-bold text-xs px-2.5 py-1.5 border border-white/20 focus:outline-none cursor-pointer">
+            <option value="">⚡ RUN DEMO SCENARIO...</option>
+            <option value="demo1">1. Driver Jays Booking Loop (End-to-End)</option>
+            <option value="demo2">2. Parking Failure & Continuity Recovery</option>
+            <option value="demo3">3. Host Add Parking & Dynamic Monetization</option>
+          </select>
+        </div>
+
+        <div class="hidden lg:block text-[11px] font-mono text-white/70 border-l border-white/10 pl-3">
+          <span class="text-white/40 block text-[9px]">GEOFENCE IST</span>
+          <span id="live-clock">--:--:--</span>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MOBILE NAVIGATION TABS -->
+  <div class="md:hidden bg-pm-deepBlue border-b border-white/10 px-2 py-1.5 flex justify-between overflow-x-auto font-mono text-[11px] text-white/80">
+    <button onclick="switchSurface('driver')" class="px-2 py-1 bg-pm-gold text-pm-deepBlue font-bold whitespace-nowrap">DRIVER</button>
+    <button onclick="switchSurface('host')" class="px-2 py-1 whitespace-nowrap">HOST</button>
+    <button onclick="switchSurface('civic')" class="px-2 py-1 whitespace-nowrap">CIVIC</button>
+    <button onclick="switchSurface('admin')" class="px-2 py-1 whitespace-nowrap">ADMIN</button>
+  </div>
+
+  <!-- ACTIVE DEMO BANNER (Dynamic) -->
+  <div id="demo-banner" class="hidden bg-pm-secBlue text-white border-b-2 border-pm-gold px-4 py-2 font-mono text-xs flex items-center justify-between shadow-inner">
+    <div class="flex items-center gap-2">
+      <span class="bg-pm-gold text-pm-deepBlue font-bold px-1.5 py-0.5 text-[10px]">ACTIVE SCENARIO</span>
+      <span id="demo-banner-text" class="font-bold">Demonstrating Driver Jays End-to-End Parking Loop</span>
+    </div>
+    <button onclick="dismissDemoBanner()" class="text-pm-gold hover:text-white font-bold text-xs">[ DISMISS ]</button>
+  </div>
+
+  <!-- MAIN VIEWPORT CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 space-y-6">
+
+    <!-- =================================================================== -->
+    <!-- SURFACE A: DRIVER OS (DISCOVERY, MAP, CARDS, QR, SESSIONS, RECOVERY)-->
+    <!-- =================================================================== -->
+    <section id="surface-driver" class="space-y-6">
+      
+      <!-- Driver Top Telemetry & Destination Search -->
+      <div class="pm-card p-4 tech-corner-box border-pm-deepBlue/30 bg-white">
+        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+          
+          <!-- Search Destination Input -->
+          <div class="flex-1 relative flex items-center">
+            <span class="absolute left-3 font-mono text-pm-deepBlue text-sm">⌖</span>
+            <input type="text" id="driver-search-input" value="Koramangala 5th Block, Bengaluru" 
+              class="w-full pl-9 pr-24 py-2 bg-pm-bg border border-pm-deepBlue/30 font-mono text-sm text-pm-textPrimary focus:outline-none focus:border-pm-deepBlue focus:ring-1 focus:ring-pm-deepBlue"
+              placeholder="Search destination (Koramangala, Indiranagar, HSR, BTM...)" />
+            <button onclick="triggerSearch()" class="absolute right-1 px-3 py-1 bg-pm-deepBlue text-white font-mono text-xs font-bold hover:bg-pm-secBlue">
+              LOCATE
+            </button>
+          </div>
+
+          <!-- Urban Hub Selectors -->
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 font-mono text-xs">
+            <button onclick="filterByHub('all')" class="hub-pill px-2.5 py-1 bg-pm-deepBlue text-white font-bold border border-pm-deepBlue whitespace-nowrap">ALL HUBS (50)</button>
+            <button onclick="filterByHub('koramangala')" class="hub-pill px-2.5 py-1 bg-white text-pm-deepBlue border border-pm-deepBlue/30 hover:border-pm-deepBlue whitespace-nowrap">KORAMANGALA</button>
+            <button onclick="filterByHub('indiranagar')" class="hub-pill px-2.5 py-1 bg-white text-pm-deepBlue border border-pm-deepBlue/30 hover:border-pm-deepBlue whitespace-nowrap">INDIRANAGAR</button>
+            <button onclick="filterByHub('hsr')" class="hub-pill px-2.5 py-1 bg-white text-pm-deepBlue border border-pm-deepBlue/30 hover:border-pm-deepBlue whitespace-nowrap">HSR LAYOUT</button>
+            <button onclick="filterByHub('btm')" class="hub-pill px-2.5 py-1 bg-white text-pm-deepBlue border border-pm-deepBlue/30 hover:border-pm-deepBlue whitespace-nowrap">BTM LAYOUT</button>
+            <button onclick="filterByHub('jayanagar')" class="hub-pill px-2.5 py-1 bg-white text-pm-deepBlue border border-pm-deepBlue/30 hover:border-pm-deepBlue whitespace-nowrap">JAYANAGAR</button>
+          </div>
+
+        </div>
+
+        <!-- Secondary Filter Tags -->
+        <div class="flex flex-wrap items-center justify-between border-t border-pm-deepBlue/10 mt-3 pt-3 gap-2 font-mono text-xs">
+          <div class="flex items-center gap-2">
+            <span class="text-pm-slate text-[11px]">SORT BY:</span>
+            <button onclick="sortParking('distance')" class="text-pm-deepBlue font-bold underline">PROXIMITY</button>
+            <span class="text-pm-slate">•</span>
+            <button onclick="sortParking('price')" class="text-pm-slate hover:text-pm-deepBlue">CHEAPEST</button>
+            <span class="text-pm-slate">•</span>
+            <button onclick="sortParking('confidence')" class="text-pm-slate hover:text-pm-deepBlue">MOST RELIABLE</button>
+          </div>
+
+          <!-- Driver Profile Badge (Demo Driver Jays) -->
+          <div class="flex items-center gap-2 bg-pm-bg px-2.5 py-1 border border-pm-deepBlue/20">
+            <span class="text-pm-slate text-[10px]">DRIVER:</span>
+            <span class="font-bold text-pm-deepBlue">JAYS JOSE</span>
+            <span class="text-pm-gold font-bold">|</span>
+            <span class="text-pm-textSecondary">HONDA CITY (KA01XX1234)</span>
+            <button onclick="openCitizenReportModal()" class="ml-2 text-[10px] text-pm-terracotta border border-pm-terracotta/40 px-1.5 py-0.5 hover:bg-red-50">
+              [ ⚠ REPORT STREET ISSUE ]
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Blueprint Map + Parking Cards Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Architectural Blueprint Map (7 cols) -->
+        <div class="lg:col-span-7 space-y-2">
+          <div class="flex items-center justify-between font-mono text-xs text-pm-textSecondary px-1">
+            <span class="font-bold text-pm-deepBlue flex items-center gap-1">
+              <span>🗺️</span> ARCHITECTURAL BLUEPRINT MAP
+            </span>
+            <span class="text-[11px]">[GRID SCALE 1:500 • BENGALURU URBAN SPATIAL]</span>
+          </div>
+
+          <div class="relative w-full h-[520px] pm-card overflow-hidden border-2 border-pm-deepBlue blueprint-map-container tech-corner-box tech-corner-box-white">
+            
+            <!-- SVG Vector Map Graphic -->
+            <svg class="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 800 520">
+              <defs>
+                <pattern id="bm-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+                  <path d="M 20 0 L 20 40 M 0 20 L 40 20" fill="none" stroke="rgba(255,255,255,0.02)" stroke-width="0.5"/>
+                </pattern>
+                <radialGradient id="bm-radar-gradient">
+                  <stop offset="0%" stop-color="rgba(213,163,67,0.25)"/>
+                  <stop offset="100%" stop-color="rgba(11,64,87,0)"/>
+                </radialGradient>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#bm-grid)" />
+
+              <!-- Urban Major Road Arterials -->
+              <!-- 100ft Road Axis -->
+              <rect x="360" y="0" width="80" height="520" fill="rgba(31,97,124,0.18)" stroke="rgba(255,255,255,0.2)" stroke-width="1" />
+              <line x1="400" y1="0" x2="400" y2="520" stroke="rgba(213,163,67,0.4)" stroke-width="1.5" stroke-dasharray="8 6" />
+              <text x="408" y="28" fill="rgba(255,255,255,0.45)" font-family="monospace" font-size="9" font-weight="bold">100FT ROAD ARTERIAL</text>
+
+              <!-- 80ft Road Crossing -->
+              <rect x="0" y="220" width="800" height="60" fill="rgba(31,97,124,0.18)" stroke="rgba(255,255,255,0.2)" stroke-width="1" />
+              <line x1="0" y1="250" x2="800" y2="250" stroke="rgba(255,255,255,0.3)" stroke-width="1" stroke-dasharray="6 4" />
+              <text x="18" y="244" fill="rgba(255,255,255,0.45)" font-family="monospace" font-size="9" font-weight="bold">80FT ROAD JUNCTION</text>
+
+              <!-- Diagonal Connector Arterials -->
+              <path d="M 0 110 L 360 220" stroke="rgba(255,255,255,0.2)" stroke-width="22" fill="none" opacity="0.35"/>
+              <text x="110" y="140" fill="rgba(255,255,255,0.4)" font-family="monospace" font-size="8" transform="rotate(16 110 140)">JYOTI NIVAS COLLEGE RD</text>
+
+              <!-- Building Footprints & Urban Blocks -->
+              <rect x="460" y="40" width="150" height="140" fill="rgba(11,64,87,0.45)" stroke="rgba(213,163,67,0.5)" stroke-width="1" stroke-dasharray="4 2"/>
+              <text x="470" y="60" fill="#D5A343" font-family="monospace" font-size="9" font-weight="bold">[BLOCK-01: FORUM MALL]</text>
+
+              <rect x="180" y="45" width="130" height="130" fill="rgba(31,97,124,0.35)" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+              <text x="190" y="65" fill="#FFFFFF" font-family="monospace" font-size="9" font-weight="bold">[BBMP MULTI-LEVEL PARKING]</text>
+
+              <rect x="460" y="310" width="180" height="140" fill="rgba(11,64,87,0.45)" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+              <text x="470" y="330" fill="rgba(255,255,255,0.7)" font-family="monospace" font-size="9">[SONY WORLD PLAZA]</text>
+
+              <!-- Restricted Hydrant Corridor -->
+              <rect x="60" y="310" width="220" height="140" fill="rgba(199,127,108,0.2)" stroke="rgba(199,127,108,0.6)" stroke-width="1" stroke-dasharray="3 3"/>
+              <text x="70" y="330" fill="#C77F6C" font-family="monospace" font-size="9" font-weight="bold">[RESTRICTED: NO-PARK ZONE]</text>
+
+              <!-- Radar Scanner Sweep -->
+              <circle cx="400" cy="250" r="180" fill="url(#bm-radar-gradient)" class="radar-sweeper"/>
+              <circle cx="400" cy="250" r="180" fill="none" stroke="rgba(213,163,67,0.3)" stroke-width="1" stroke-dasharray="2 4"/>
+              <circle cx="400" cy="250" r="90" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+
+              <!-- Coordinate Axes -->
+              <text x="10" y="20" fill="rgba(255,255,255,0.4)" font-family="monospace" font-size="9">12.9360° N</text>
+              <text x="10" y="505" fill="rgba(255,255,255,0.4)" font-family="monospace" font-size="9">12.9340° N</text>
+              <text x="730" y="505" fill="rgba(255,255,255,0.4)" font-family="monospace" font-size="9">77.6260° E</text>
+            </svg>
+
+            <!-- Dynamic Markers Container -->
+            <div id="driver-map-markers" class="absolute inset-0">
+              <!-- Markers will be rendered by JS based on selected hub -->
+            </div>
+
+            <!-- Blueprint Map HUD Legends -->
+            <div class="absolute bottom-3 left-3 z-30 bg-pm-deepBlue/95 border border-white/20 p-2.5 font-mono text-[11px] text-white space-y-1 shadow-lg">
+              <div class="font-bold text-pm-gold text-[10px] uppercase tracking-wider border-b border-white/10 pb-1">PARKING SYMBOL LEGEND</div>
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 bg-pm-deepBlue border border-white text-white flex items-center justify-center text-[8px] font-bold">P</span>
+                <span>GOVERNMENT (BLUE)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 bg-white border border-pm-gold text-pm-deepBlue flex items-center justify-center text-[8px] font-bold">P</span>
+                <span>PRIVATE (GOLD)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 bg-red-950 border border-pm-terracotta text-pm-terracotta flex items-center justify-center text-[8px] font-bold">⚠</span>
+                <span>INCIDENT / ESCALATION</span>
+              </div>
+            </div>
+
+            <!-- Reticle Coordinate HUD -->
+            <div class="absolute top-3 right-3 z-30 bg-pm-deepBlue/90 border border-white/20 p-2 font-mono text-[10px] text-white space-y-0.5">
+              <div class="text-pm-gold font-bold flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <span>GEOFENCE ACTIVE</span>
+              </div>
+              <div id="reticle-latlon">LAT: 12.9352° N | LON: 77.6245° E</div>
+              <div class="text-white/40">ACCURACY: ±1.2m [GPS+WIFI]</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Parking Spot Cards List (5 cols) -->
+        <div class="lg:col-span-5 space-y-3 flex flex-col justify-between">
+          <div class="flex items-center justify-between font-mono text-xs px-1">
+            <span class="font-bold text-pm-deepBlue uppercase tracking-wider">PARKING NODES (<span id="spots-count">10</span>)</span>
+            <span id="spots-area-title" class="text-pm-slate font-bold">KORAMANGALA HUB</span>
+          </div>
+
+          <!-- Cards Scrollable Area -->
+          <div id="parking-cards-list" class="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+            <!-- Cards rendered dynamically by JS -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- THE CONTINUITY ENGINE: VISUAL EVIDENCE TIMELINE (FIRST CLASS UI) -->
+      <div class="pm-card tech-corner-box p-6 bg-white border-2 border-pm-deepBlue space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between border-b-2 border-pm-deepBlue pb-3 gap-2">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 bg-pm-secBlue inline-block"></span>
+              <span class="font-mono font-bold text-xs uppercase tracking-widest text-pm-secBlue">TRUST VISUALIZATION SUITE</span>
+            </div>
+            <h2 class="font-heading font-bold text-xl text-pm-deepBlue mt-0.5">THE CONTINUITY ENGINE — VERIFIED EVIDENCE TIMELINE</h2>
+          </div>
+          <div class="flex items-center gap-2 font-mono text-xs">
+            <span class="bg-pm-deepBlue text-white px-2.5 py-1 font-bold">LEDGER HASH: 0x9F82...402B</span>
+            <span class="bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-1 font-bold">CONFIDENCE: 98.4% HIGH</span>
+          </div>
+        </div>
+
+        <p class="text-xs text-pm-textSecondary max-w-3xl">
+          ParkMitra preserves full multi-modal evidence across every parking transition. If any discrepancy occurs, the platform records physical telemetry, prevents capacity corruption, calculates lot reliability with time decay, and routes the case directly to municipal and host resolution workflows.
+        </p>
+
+        <!-- Timeline Visual Events -->
+        <div id="continuity-timeline-events" class="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2 font-mono text-xs">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SURFACE B: HOST / OWNER OS (LISTING WIZARD, DYNAMIC PRICING, STATS) -->
+    <!-- =================================================================== -->
+    <section id="surface-host" class="hidden space-y-6">
+      
+      <!-- Host Header -->
+      <div class="bg-pm-deepBlue text-white p-5 tech-corner-box border-2 border-pm-deepBlue flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 font-mono text-xs text-pm-gold">
+            <span>🏠 PARKMITRA HOST OS</span>
+            <span>•</span>
+            <span>MONETIZE UNUSED URBAN SPACES</span>
+          </div>
+          <h2 class="font-heading font-bold text-2xl tracking-tight text-white mt-1">PARKING HOST & OPERATOR WORKSPACE</h2>
+          <p class="text-xs text-white/70 font-mono mt-0.5">Manage space inventory, configure dynamic pricing, audit live sessions, and track payouts.</p>
+        </div>
+
+        <button onclick="openAddParkingWizard()" class="pm-btn-primary bg-pm-gold text-pm-deepBlue hover:bg-yellow-400 border-pm-gold py-2 px-4 text-xs font-bold shadow-md">
+          + ADD NEW PARKING SPACE
+        </button>
+      </div>
+
+      <!-- Host Metrics Overview -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono">
+        <div class="pm-card p-4 border-l-4 border-l-pm-gold">
+          <span class="text-[10px] text-pm-slate uppercase tracking-wider block">TODAY'S EARNINGS</span>
+          <div class="font-heading font-bold text-2xl text-pm-deepBlue mt-1" id="host-today-earnings">₹1,340</div>
+          <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-pm-deepBlue/10">
+            <span class="text-pm-textSecondary">Monthly Gross:</span>
+            <span class="font-bold text-pm-gold">₹34,800</span>
+          </div>
+        </div>
+
+        <div class="pm-card p-4 border-l-4 border-l-pm-secBlue">
+          <span class="text-[10px] text-pm-slate uppercase tracking-wider block">VEHICLES PARKED</span>
+          <div class="font-heading font-bold text-2xl text-pm-deepBlue mt-1" id="host-active-vehicles">7 <span class="text-xs font-normal text-pm-slate">active</span></div>
+          <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-pm-deepBlue/10">
+            <span class="text-pm-textSecondary">Turnover Today:</span>
+            <span class="font-bold text-pm-deepBlue">19 sessions</span>
+          </div>
+        </div>
+
+        <div class="pm-card p-4 border-l-4 border-l-emerald-600">
+          <span class="text-[10px] text-pm-slate uppercase tracking-wider block">LOT UTILISATION</span>
+          <div class="font-heading font-bold text-2xl text-pm-deepBlue mt-1" id="host-utilisation">78%</div>
+          <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-pm-deepBlue/10">
+            <span class="text-pm-textSecondary">Capacity Status:</span>
+            <span class="font-bold text-emerald-700">OPTIMAL</span>
+          </div>
+        </div>
+
+        <div class="pm-card p-4 border-l-4 border-l-pm-deepBlue">
+          <span class="text-[10px] text-pm-slate uppercase tracking-wider block">HOST RELIABILITY SCORE</span>
+          <div class="font-heading font-bold text-2xl text-pm-deepBlue mt-1" id="host-reliability">96%</div>
+          <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-pm-deepBlue/10">
+            <span class="text-pm-textSecondary">Confidence Tier:</span>
+            <span class="font-bold text-emerald-700">HIGH CONFIDENCE</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Host Owned Parking Spaces & Dynamic Pricing Rules -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Owned Locations List (7 cols) -->
+        <div class="lg:col-span-7 space-y-3">
+          <div class="flex items-center justify-between font-mono text-xs px-1">
+            <span class="font-bold text-pm-deepBlue uppercase tracking-wider">YOUR PUBLISHED SPACES (3)</span>
+            <span class="text-pm-slate">STATUS: ACTIVE IN MARKETPLACE</span>
+          </div>
+
+          <!-- Space 1 -->
+          <div class="pm-card p-4 border border-pm-deepBlue/40">
+            <div class="flex items-start justify-between border-b border-pm-deepBlue/10 pb-2">
+              <div>
+                <span class="font-mono text-[10px] font-bold bg-pm-gold/20 text-pm-deepBlue border border-pm-gold px-1.5 py-0.5">PRIVATE RESIDENTIAL</span>
+                <h3 class="font-heading font-bold text-base text-pm-deepBlue mt-1">Koramangala 5th Block Private Parking</h3>
+                <p class="text-xs text-pm-textSecondary font-mono">100ft Road, Near Forum Mall Complex</p>
+              </div>
+              <div class="text-right font-mono">
+                <div class="text-lg font-bold text-pm-deepBlue">₹40/hr</div>
+                <span class="text-[10px] text-emerald-700 font-bold">17/20 OCCUPIED (85%)</span>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between text-xs font-mono mt-3 pt-2 border-t border-pm-deepBlue/10 gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 border border-emerald-200">✓ HIGH CONFIDENCE (97%)</span>
+                <span class="text-pm-gold font-bold bg-yellow-50 px-2 py-0.5 border border-pm-gold/40">DYNAMIC PRICING: 1.25x</span>
+              </div>
+              <button onclick="simulateDriverBooking('blr-km-501')" class="pm-btn-primary py-1 px-3 text-[10px]">
+                [ SIMULATE DRIVER ARRIVAL ]
+              </button>
+            </div>
+          </div>
+
+          <!-- Space 2 -->
+          <div class="pm-card p-4 border border-pm-deepBlue/40">
+            <div class="flex items-start justify-between border-b border-pm-deepBlue/10 pb-2">
+              <div>
+                <span class="font-mono text-[10px] font-bold bg-pm-secBlue/20 text-pm-secBlue border border-pm-secBlue px-1.5 py-0.5">COMMERCIAL PLAZA</span>
+                <h3 class="font-heading font-bold text-base text-pm-deepBlue mt-1">Sony World Commercial Plaza Lot</h3>
+                <p class="text-xs text-pm-textSecondary font-mono">80ft Road, Koramangala 4th Block</p>
+              </div>
+              <div class="text-right font-mono">
+                <div class="text-lg font-bold text-pm-deepBlue">₹50/hr</div>
+                <span class="text-[10px] text-emerald-700 font-bold">43/45 OCCUPIED (95%)</span>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between text-xs font-mono mt-3 pt-2 border-t border-pm-deepBlue/10 gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-amber-800 font-bold bg-amber-50 px-2 py-0.5 border border-amber-300">MEDIUM CONFIDENCE (82%)</span>
+                <span class="text-pm-gold font-bold bg-yellow-50 px-2 py-0.5 border border-pm-gold/40">DYNAMIC PRICING: 1.50x</span>
+              </div>
+              <button onclick="alert('Pricing rules updated for Sony World Plaza.')" class="pm-btn-secondary py-1 px-3 text-[10px]">
+                [ EDIT PRICING ]
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Pricing Multiplier Engine (5 cols) -->
+        <div class="lg:col-span-5 space-y-3">
+          <div class="flex items-center justify-between font-mono text-xs px-1">
+            <span class="font-bold text-pm-gold uppercase tracking-wider">⚡ DYNAMIC PRICING ENGINE</span>
+            <span class="text-emerald-700 font-bold">STATUS: OPT-IN ACTIVE</span>
+          </div>
+
+          <div class="pm-card tech-corner-box p-4 border border-pm-deepBlue/40 bg-white space-y-3 font-mono text-xs">
+            <div class="border-b border-pm-deepBlue/10 pb-2">
+              <h4 class="font-heading font-bold text-sm text-pm-deepBlue">Occupancy-Based Demand Multipliers</h4>
+              <p class="text-[11px] text-pm-textSecondary mt-0.5">Automated yield management adjusts prices smoothly as lot fills up without surging unexpectedly.</p>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between p-2 bg-pm-bg border border-pm-deepBlue/10">
+                <div>
+                  <span class="font-bold text-pm-deepBlue">TIER 1: 0% – 50% Occupancy</span>
+                  <span class="text-[10px] text-pm-slate block">Standard Base Tariff</span>
+                </div>
+                <span class="font-bold text-pm-deepBlue bg-white px-2 py-1 border border-pm-deepBlue/20">1.0x (₹40/hr)</span>
+              </div>
+
+              <div class="flex items-center justify-between p-2 bg-pm-bg border border-pm-deepBlue/10">
+                <div>
+                  <span class="font-bold text-pm-deepBlue">TIER 2: 50% – 75% Occupancy</span>
+                  <span class="text-[10px] text-pm-slate block">Moderate Demand Adjustment</span>
+                </div>
+                <span class="font-bold text-pm-deepBlue bg-white px-2 py-1 border border-pm-deepBlue/20">1.1x (₹44/hr)</span>
+              </div>
+
+              <div class="flex items-center justify-between p-2 bg-yellow-50 border border-pm-gold/40">
+                <div>
+                  <span class="font-bold text-pm-deepBlue">TIER 3: 75% – 90% Occupancy</span>
+                  <span class="text-[10px] text-pm-gold block">★ CURRENT ACTIVE TIER (85%)</span>
+                </div>
+                <span class="font-bold text-pm-deepBlue bg-pm-gold/30 px-2 py-1 border border-pm-gold">1.25x (₹50/hr)</span>
+              </div>
+
+              <div class="flex items-center justify-between p-2 bg-pm-bg border border-pm-deepBlue/10">
+                <div>
+                  <span class="font-bold text-pm-deepBlue">TIER 4: 90% – 100% Occupancy</span>
+                  <span class="text-[10px] text-pm-slate block">Peak Demand Rationing</span>
+                </div>
+                <span class="font-bold text-pm-deepBlue bg-white px-2 py-1 border border-pm-deepBlue/20">1.5x (₹60/hr)</span>
+              </div>
+            </div>
+
+            <div class="text-[10px] text-pm-slate pt-2 border-t border-pm-deepBlue/10">
+              Invariant Guard: Dynamic multipliers apply only to new reservations. Active sessions are price-locked at their check-in rate.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SURFACE C: CIVIC & GOVERNMENT COMMAND CENTRE (MUNICIPAL BBMP OS)    -->
+    <!-- =================================================================== -->
+    <section id="surface-civic" class="hidden space-y-6">
+      
+      <!-- Command Centre Sub-header -->
+      <div class="bg-pm-deepBlue text-white p-5 tech-corner-box border-2 border-pm-deepBlue flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 font-mono text-xs text-pm-gold">
+            <span>🏛️ BENGALURU URBAN MOBILITY AUTHORITY</span>
+            <span>•</span>
+            <span>BBMP DIVISION</span>
+          </div>
+          <h2 class="font-heading font-bold text-2xl tracking-tight text-white mt-1">URBAN PARKING & MOBILITY COMMAND CENTRE</h2>
+          <p class="text-xs text-white/70 font-mono mt-0.5">Municipal Spatial Telemetry, Parking Zones, ANPR Enforcement & Civic Incident Triage</p>
+        </div>
+
+        <div class="flex items-center gap-3 font-mono text-xs">
+          <div class="bg-white/10 p-2 border border-white/20 text-right">
+            <span class="text-white/40 block text-[9px]">ACTIVE MUNICIPAL WARD</span>
+            <span class="font-bold text-pm-gold">WARD 151 (KORAMANGALA)</span>
+          </div>
+          <div class="bg-white/10 p-2 border border-white/20 text-right">
+            <span class="text-white/40 block text-[9px]">ENFORCEMENT SQUADS</span>
+            <span class="font-bold text-emerald-400">12 UNITS ACTIVE</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-Time Municipal KPI Data Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono">
+        <div class="pm-card p-4 border-l-4 border-l-pm-secBlue">
+          <span class="text-[10px] text-pm-slate uppercase tracking-wider block">TOTAL MUNICIPAL CAPACITY</span>
+          <div class="font-heading font-bold text-2xl text-pm-deepBlue mt-1">48,250 <span class="text-xs font-mono font-normal text-pm-slate">bays</span></div>
+          <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-pm-deepBlue/10">
+            <span class="text-pm-textSecondary">Occupancy Rate:</span>
+            <span class="font-bold text-pm-deepBlue">84.2% [HIGH]</span>
+          </div>
+        </div>
+
+        <div class="pm-card p-4 border-l-4 border-l-pm-gold">
+          <span class="text-[10px] text-pm-slate uppercase tracking-wider block">REAL-TIME MUNICIPAL REVENUE</span>
+          <div class="font-heading font-bold text-2xl text-pm-deepBlue mt-1">₹18,42,500 <span class="text-xs font-mono font-normal text-pm-slate">today</span></div>
+          <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-pm-deepBlue/10">
+            <span class="text-pm-textSecondary">Marketplace Share:</span>
+            <span class="font-bold text-pm-gold">₹6,12,000 (33%)</span>
+          </div>
+        </div>
+
+        <div class="pm-card p-4 border-l-4 border-l-pm-terracotta">
+          <span class="text-[10px] text-pm-slate uppercase tracking-wider block">ACTIVE CIVIC ESCALATIONS</span>
+          <div class="font-heading font-bold text-2xl text-pm-terracotta mt-1">142 <span class="text-xs font-mono font-normal text-pm-slate">incidents</span></div>
+          <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-pm-deepBlue/10">
+            <span class="text-pm-textSecondary">Status:</span>
+            <span class="font-bold text-pm-terracotta">TERRACOTTA WARNING</span>
+          </div>
+        </div>
+
+        <div class="pm-card p-4 border-l-4 border-l-emerald-600">
+          <span class="text-[10px] text-pm-slate uppercase tracking-wider block">CITYWIDE RELIABILITY INDEX</span>
+          <div class="font-heading font-bold text-2xl text-pm-deepBlue mt-1">96.8% <span class="text-xs font-mono font-normal text-pm-slate">score</span></div>
+          <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-pm-deepBlue/10">
+            <span class="text-pm-textSecondary">Confidence Matrix:</span>
+            <span class="font-bold text-emerald-700">HIGH CONFIDENCE</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Civic Map & Citizen Report Incident Queue -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Large Command Centre Map (8 cols) -->
+        <div class="lg:col-span-8 space-y-2">
+          <div class="flex items-center justify-between font-mono text-xs px-1">
+            <span class="font-bold text-pm-deepBlue flex items-center gap-1">
+              <span>🌐</span> WARD MOBILITY BLUEPRINT & ANPR CORRIDOR FEEDS
+            </span>
+            <span class="text-pm-slate">[SENSOR POLLING: 250ms]</span>
+          </div>
+
+          <div class="relative w-full h-[520px] pm-card overflow-hidden border-2 border-pm-deepBlue blueprint-map-container tech-corner-box tech-corner-box-white">
+            <svg class="absolute inset-0 w-full h-full" viewBox="0 0 800 520">
+              <rect width="100%" height="100%" fill="url(#bm-grid)" />
+              <rect x="360" y="0" width="80" height="520" fill="rgba(31,97,124,0.2)" stroke="rgba(255,255,255,0.2)" />
+              <rect x="0" y="220" width="800" height="60" fill="rgba(31,97,124,0.2)" stroke="rgba(255,255,255,0.2)" />
+
+              <!-- Heatmap Density Zones -->
+              <circle cx="400" cy="250" r="140" fill="rgba(213,163,67,0.15)" stroke="rgba(213,163,67,0.4)" stroke-dasharray="4 2"/>
+              <circle cx="240" cy="120" r="90" fill="rgba(31,97,124,0.25)" stroke="rgba(255,255,255,0.3)"/>
+              <circle cx="160" cy="380" r="80" fill="rgba(199,127,108,0.25)" stroke="rgba(199,127,108,0.6)"/>
+              
+              <!-- ANPR Feed Camera Indicators -->
+              <circle cx="400" cy="220" r="6" fill="#D5A343"/>
+              <text x="412" y="224" fill="#D5A343" font-family="monospace" font-size="10" font-weight="bold">ANPR-CAM #01 [ACTIVE: 100FT RD]</text>
+
+              <circle cx="360" cy="280" r="6" fill="#0B4057" stroke="#FFFFFF"/>
+              <text x="235" y="284" fill="#FFFFFF" font-family="monospace" font-size="10" font-weight="bold">ANPR-CAM #02 [ACTIVE: 80FT RD]</text>
+
+              <circle cx="160" cy="380" r="8" fill="#C77F6C" class="animate-ping"/>
+              <text x="180" y="384" fill="#C77F6C" font-family="monospace" font-size="11" font-weight="bold">⚠ ALARM: HYDRANT BLOCKAGE [KA05EX9921]</text>
+            </svg>
+
+            <!-- Command HUD Overlay -->
+            <div class="absolute top-3 left-3 z-30 bg-pm-deepBlue/95 text-white font-mono text-xs p-3 border border-white/20 max-w-xs space-y-1.5 shadow-xl">
+              <div class="font-bold text-pm-gold border-b border-white/20 pb-1">BBMP WARD 151 TELEMETRY</div>
+              <div class="flex justify-between"><span>Active ANPR Cameras:</span><span class="font-bold">42/42 ONLINE</span></div>
+              <div class="flex justify-between"><span>Bay Sensors Polled:</span><span class="font-bold">1,840 OK</span></div>
+              <div class="flex justify-between"><span>Enforcement Units:</span><span class="font-bold text-emerald-400">4 En-Route</span></div>
+              <div class="flex justify-between border-t border-white/10 pt-1"><span>Zonal Stability:</span><span class="font-bold text-pm-gold">96.8% HIGH</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Citizen Reports & Enforcement Dispatch Feed (4 cols) -->
+        <div class="lg:col-span-4 space-y-3">
+          <div class="flex items-center justify-between font-mono text-xs px-1">
+            <span class="font-bold text-pm-terracotta flex items-center gap-1">
+              <span>⚠</span> CITIZEN REPORTS & VIOLATIONS
+            </span>
+            <span class="text-pm-slate">REAL-TIME</span>
+          </div>
+
+          <div class="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+            
+            <!-- Incident 1: Blocking Hydrant Zone -->
+            <div id="civic-card-inc-904" class="pm-card p-3.5 border-l-4 border-l-pm-terracotta border-pm-deepBlue/30 bg-red-50/20">
+              <div class="flex items-center justify-between font-mono text-[10px] text-pm-terracotta border-b border-pm-terracotta/20 pb-1 mb-2">
+                <span class="font-bold">INCIDENT #INC-904 • TERRACOTTA</span>
+                <span>2 MINS AGO</span>
+              </div>
+              <h4 class="font-heading font-bold text-sm text-pm-deepBlue">Unauthorized Parking in Fire Hydrant Zone</h4>
+              <p class="font-mono text-xs text-pm-textSecondary mt-1">Vehicle `KA-05-EX-9921` detected on 80ft Road Koramangala. Obstructing fire department connection.</p>
+              
+              <div class="mt-3 flex items-center justify-between font-mono text-xs">
+                <span class="text-pm-terracotta font-bold text-[10px] bg-red-100 px-1.5 py-0.5 border border-red-300">LOW CONFIDENCE BAY</span>
+                <button onclick="dispatchEnforcement('INC-904')" class="pm-btn-primary py-1 px-3 text-[11px] bg-pm-terracotta hover:bg-red-800 border-pm-terracotta">
+                  [ DISPATCH SQUAD ]
+                </button>
+              </div>
+            </div>
+
+            <!-- Incident 2: Footpath Obstruction -->
+            <div id="civic-card-inc-905" class="pm-card p-3.5 border-l-4 border-l-amber-500 border-pm-deepBlue/30">
+              <div class="flex items-center justify-between font-mono text-[10px] text-amber-700 border-b border-amber-200 pb-1 mb-2">
+                <span class="font-bold">INCIDENT #INC-905 • CITIZEN REPORT</span>
+                <span>12 MINS AGO</span>
+              </div>
+              <h4 class="font-heading font-bold text-sm text-pm-deepBlue">Double Parking on 100ft Road Corridor</h4>
+              <p class="font-mono text-xs text-pm-textSecondary mt-1">Citizen photo upload: Delivery truck parked across pedestrian crossing. Optical validation score: 94%.</p>
+              
+              <div class="mt-3 flex items-center justify-between font-mono text-xs">
+                <span class="text-amber-800 font-bold text-[10px] bg-amber-50 px-1.5 py-0.5 border border-amber-300">VALIDATING</span>
+                <button onclick="dispatchEnforcement('INC-905')" class="pm-btn-secondary py-1 px-3 text-[11px]">
+                  [ ASSIGN OFFICER ]
+                </button>
+              </div>
+            </div>
+
+            <!-- Incident 3: Sensor Drift (Under Review) -->
+            <div id="civic-card-inc-902" class="pm-card p-3.5 border-l-4 border-l-pm-slate border-pm-deepBlue/30 bg-pm-bg">
+              <div class="flex items-center justify-between font-mono text-[10px] text-pm-slate border-b border-pm-deepBlue/10 pb-1 mb-2">
+                <span class="font-bold">HARDWARE TELEMETRY DRIFT</span>
+                <span>35 MINS AGO</span>
+              </div>
+              <h4 class="font-heading font-bold text-sm text-pm-deepBlue">ANPR Camera Signal Drift #CAM-14</h4>
+              <p class="font-mono text-xs text-pm-textSecondary mt-1">Church Street Node #14 optical clarity dropped to 78%. Auto-recalibration triggered.</p>
+              
+              <div class="mt-3 flex items-center justify-between font-mono text-xs">
+                <span class="text-pm-slate font-bold text-[10px] bg-gray-200 px-1.5 py-0.5 border border-gray-300">AUTO-HEALING</span>
+                <span class="text-[11px] font-mono text-emerald-700 font-bold">✓ RE-ALIGNED</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SURFACE D: ADMIN OPERATIONS (AUDIT LOGS, LOT REINSTATEMENT, DISPUTE)-->
+    <!-- =================================================================== -->
+    <section id="surface-admin" class="hidden space-y-6">
+      
+      <!-- Admin Header -->
+      <div class="bg-pm-surface p-5 tech-corner-box border-2 border-pm-deepBlue flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 font-mono text-xs text-pm-secBlue">
+            <span>⚙️ PARKMITRA CENTRAL OPERATIONS</span>
+            <span>•</span>
+            <span>TRUST & DISPUTE AUDIT</span>
+          </div>
+          <h2 class="font-heading font-bold text-2xl text-pm-deepBlue mt-1">CONTINUITY ENGINE & DISPUTE RESOLUTION DESK</h2>
+          <p class="text-xs text-pm-textSecondary font-mono mt-0.5">Audit system events, resolve citizen/driver complaints with live reliability delta previews, and reinstate verified lots.</p>
+        </div>
+
+        <div class="bg-pm-bg p-2.5 border border-pm-deepBlue/20 font-mono text-xs">
+          <span class="text-pm-slate text-[10px] block">SYSTEM IMMUTABLE LEDGER</span>
+          <span class="font-bold text-pm-deepBlue">1,489 EVENTS RECORDED</span>
+        </div>
+      </div>
+
+      <!-- Admin Actions Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Lots Under Review Queue (6 cols) -->
+        <div class="lg:col-span-6 space-y-3">
+          <div class="flex items-center justify-between font-mono text-xs px-1">
+            <span class="font-bold text-pm-terracotta uppercase tracking-wider">PARKING LOTS UNDER REVIEW (1)</span>
+            <span class="text-pm-slate">THRESHOLD: >= 2 SERIOUS REPORTS</span>
+          </div>
+
+          <div class="pm-card p-4 border-2 border-pm-terracotta bg-red-50/10 space-y-3 font-mono text-xs">
+            <div class="flex items-start justify-between border-b border-pm-terracotta/20 pb-2">
+              <div>
+                <span class="bg-pm-terracotta text-white font-bold px-1.5 py-0.5 text-[10px]">UNDER REVIEW</span>
+                <h3 class="font-heading font-bold text-base text-pm-deepBlue mt-1">80ft Road Fire Hydrant Clearance Bay</h3>
+                <p class="text-xs text-pm-textSecondary">Node #blr-km-904 • Koramangala 6th Block</p>
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] text-pm-terracotta font-bold block">CONFIDENCE: LOW</span>
+                <span class="text-[10px] text-pm-slate">Bookings Suspended</span>
+              </div>
+            </div>
+
+            <p class="text-[11px] text-pm-textSecondary">
+              <strong>Escalation Reason:</strong> Multiple verified reports of unauthorized vehicle blockage. System pulled this node from search to protect driver reliability.
+            </p>
+
+            <!-- Reliability Delta Preview -->
+            <div class="p-2.5 bg-white border border-pm-deepBlue/20 flex items-center justify-between">
+              <div>
+                <span class="text-[10px] text-pm-slate block">PREVIEW RELIABILITY DELTA UPON RESOLUTION:</span>
+                <span class="font-bold text-emerald-700 text-xs">Score: 42% ➔ 89% (MEDIUM CONFIDENCE)</span>
+              </div>
+              <button onclick="reinstateParkingLot('blr-km-904')" class="pm-btn-primary py-1 px-3 text-[11px]">
+                [ REINSTATE LOT ]
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Open Disputes Resolution Queue (6 cols) -->
+        <div class="lg:col-span-6 space-y-3">
+          <div class="flex items-center justify-between font-mono text-xs px-1">
+            <span class="font-bold text-pm-deepBlue uppercase tracking-wider">OPEN DRIVER DISPUTE CASES (1)</span>
+            <span class="text-pm-slate">ACTION REQUIRED</span>
+          </div>
+
+          <div class="pm-card p-4 border border-pm-deepBlue/40 space-y-3 font-mono text-xs">
+            <div class="flex items-start justify-between border-b border-pm-deepBlue/10 pb-2">
+              <div>
+                <span class="bg-yellow-100 text-yellow-800 border border-yellow-300 font-bold px-1.5 py-0.5 text-[10px]">CASE #PM-981 • DISPUTED</span>
+                <h3 class="font-heading font-bold text-base text-pm-deepBlue mt-1">Reserved Space Occupied on Arrival</h3>
+                <p class="text-xs text-pm-textSecondary">Driver: Jays Jose • Lot: Koramangala 5th Block</p>
+              </div>
+              <span class="text-[10px] text-pm-slate font-bold">14 MINS AGO</span>
+            </div>
+
+            <div class="space-y-1 text-[11px] text-pm-textSecondary bg-pm-bg p-2 border border-pm-deepBlue/10">
+              <div>• GPS Verification: Confirmed at entrance (±1.2m)</div>
+              <div>• Photo Evidence: Uploaded and hash-anchored</div>
+              <div>• Automated Recovery: Reassigned to BBMP Multi-Level (Held)</div>
+              <div>• Goodwill Credit: ₹40 simulated credit issued to driver</div>
+            </div>
+
+            <div class="flex items-center justify-between pt-1">
+              <span class="text-[10px] text-emerald-700 font-bold">✓ EVIDENCE VERIFIED</span>
+              <button onclick="resolveDisputeCase('PM-981')" class="pm-btn-primary py-1 px-3 text-[11px]">
+                [ APPROVE RECOVERY & CLOSE CASE ]
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- MODAL: INTERACTIVE BOOKING & QR VERIFICATION (LIFECYCLE ENGINE)     -->
+  <!-- =================================================================== -->
+  <div id="booking-modal" class="fixed inset-0 z-[1000] bg-pm-deepBlue/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="pm-card tech-corner-box bg-white border-2 border-pm-deepBlue max-w-lg w-full p-6 shadow-2xl space-y-5 relative">
+      
+      <div class="flex items-center justify-between border-b-2 border-pm-deepBlue pb-3">
+        <div>
+          <span class="font-mono text-[10px] text-pm-gold font-bold uppercase tracking-widest bg-pm-deepBlue px-2 py-0.5">BOOKING LIFECYCLE ENGINE</span>
+          <h3 id="modal-spot-title" class="font-heading font-bold text-xl text-pm-deepBlue mt-1">Koramangala 5th Block Private Parking</h3>
+        </div>
+        <button onclick="closeModal('booking-modal')" class="font-mono text-lg font-bold text-pm-slate hover:text-pm-deepBlue px-2 py-1 border border-pm-slate/20">✕</button>
+      </div>
+
+      <!-- State Machine Progression Tracker -->
+      <div class="font-mono text-xs">
+        <div class="flex items-center justify-between text-[11px] font-bold mb-2">
+          <span id="step-label-1" class="text-pm-deepBlue font-bold underline">1. RESERVED</span>
+          <span id="step-label-2" class="text-pm-slate">2. ACTIVE</span>
+          <span id="step-label-3" class="text-pm-slate">3. COMPLETED</span>
+        </div>
+        <div class="w-full h-2 bg-pm-bg border border-pm-deepBlue/30 relative">
+          <div id="progress-bar" class="h-full bg-pm-gold w-1/3 transition-all duration-500"></div>
+        </div>
+      </div>
+
+      <!-- Dynamic Step Content Body -->
+      <div id="modal-step-body" class="space-y-4 font-mono text-xs"></div>
+
+      <!-- Modal Footer Action Buttons -->
+      <div class="flex items-center justify-between border-t border-pm-deepBlue/20 pt-4">
+        <button onclick="closeModal('booking-modal')" class="pm-btn-secondary">
+          [ CANCEL ]
+        </button>
+        <button id="modal-next-btn" onclick="advanceBookingStep()" class="pm-btn-primary">
+          [ CONFIRM & PROCEED ]
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- MODAL: CONTINUITY FAILURE RECOVERY (DEMO SCENARIO 2)                -->
+  <!-- =================================================================== -->
+  <div id="recovery-modal" class="fixed inset-0 z-[1000] bg-pm-deepBlue/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="pm-card tech-corner-box bg-white border-2 border-pm-terracotta max-w-xl w-full p-6 shadow-2xl space-y-4 relative">
+      
+      <div class="flex items-center justify-between border-b-2 border-pm-terracotta pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">⚠</span>
+          <div>
+            <span class="font-mono text-[10px] text-white font-bold uppercase tracking-widest bg-pm-terracotta px-2 py-0.5">CONTINUITY ENGINE RECOVERY</span>
+            <h3 class="font-heading font-bold text-xl text-pm-deepBlue mt-0.5">PARKING UNAVAILABLE — WE'VE GOT YOU COVERED</h3>
+          </div>
+        </div>
+        <button onclick="closeModal('recovery-modal')" class="font-mono text-lg font-bold text-pm-slate hover:text-pm-deepBlue px-2 py-1 border border-pm-slate/20">✕</button>
+      </div>
+
+      <div class="bg-red-50 border border-pm-terracotta/30 p-3 font-mono text-xs space-y-1">
+        <div class="font-bold text-pm-terracotta">We're sorry — this parking space wasn't available upon arrival.</div>
+        <p class="text-pm-textSecondary">Your evidence has been recorded and anchored to the municipal ledger. Case <strong>#PM-981</strong> created. To keep you moving, we held nearby verified alternatives:</p>
+      </div>
+
+      <!-- Alternatives Grid -->
+      <div class="space-y-2 font-mono text-xs">
+        <div class="flex items-center justify-between p-3 bg-pm-bg border-2 border-emerald-600">
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-bold text-pm-deepBlue">BBMP Multi-Level Municipal Facility</span>
+              <span class="bg-emerald-100 text-emerald-800 font-bold px-1.5 text-[9px]">RECOMMENDED</span>
+            </div>
+            <span class="text-[11px] text-pm-slate">140m away • 2 min walk • HIGH CONFIDENCE (99%)</span>
+          </div>
+          <div class="text-right">
+            <span class="font-bold text-sm text-pm-deepBlue">₹20/hr</span>
+            <button onclick="acceptRecoveryLot('blr-km-104')" class="pm-btn-primary py-1 px-3 text-[10px] block mt-1">
+              [ PARK HERE ]
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between p-3 bg-white border border-pm-deepBlue/20">
+          <div>
+            <div class="font-bold text-pm-deepBlue">Sony World Commercial Plaza Lot</div>
+            <span class="text-[11px] text-pm-slate">320m away • 4 min walk • MEDIUM CONFIDENCE</span>
+          </div>
+          <div class="text-right">
+            <span class="font-bold text-sm text-pm-deepBlue">₹50/hr</span>
+            <button onclick="acceptRecoveryLot('blr-km-302')" class="pm-btn-secondary py-1 px-3 text-[10px] block mt-1">
+              [ SELECT ]
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Goodwill Credit Notice -->
+      <div class="p-3 bg-yellow-50 border border-pm-gold text-pm-deepBlue font-mono text-xs flex items-center justify-between">
+        <div>
+          <span class="font-bold block">★ ₹40 ParkMitra Goodwill Credit Credited</span>
+          <span class="text-[10px] text-pm-slate">[SIMULATED DEMO CREDIT APPLIED AUTOMATICALLY]</span>
+        </div>
+        <span class="text-xs font-bold text-emerald-700">✓ WALLET UPDATED</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- MODAL: CITIZEN STREET PARKING VIOLATION REPORT                      -->
+  <!-- =================================================================== -->
+  <div id="report-modal" class="fixed inset-0 z-[1000] bg-pm-deepBlue/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="pm-card tech-corner-box bg-white border-2 border-pm-deepBlue max-w-md w-full p-6 shadow-2xl space-y-4 relative">
+      
+      <div class="flex items-center justify-between border-b-2 border-pm-deepBlue pb-3">
+        <div>
+          <span class="font-mono text-[10px] text-pm-gold font-bold uppercase tracking-widest bg-pm-deepBlue px-2 py-0.5">CIVIC REPORTING PROTOCOL</span>
+          <h3 class="font-heading font-bold text-lg text-pm-deepBlue mt-1">Report Street Parking Issue</h3>
+        </div>
+        <button onclick="closeModal('report-modal')" class="font-mono text-lg font-bold text-pm-slate hover:text-pm-deepBlue px-2 py-1 border border-pm-slate/20">✕</button>
+      </div>
+
+      <div class="font-mono text-xs space-y-3">
+        <div>
+          <label class="block text-pm-slate text-[10px] uppercase mb-1">VIOLATION CATEGORY</label>
+          <select id="report-category" class="w-full p-2 bg-pm-bg border border-pm-deepBlue/30 text-pm-textPrimary text-xs focus:outline-none">
+            <option>Blocking emergency access / fire hydrant</option>
+            <option>Footpath obstruction / pedestrian danger</option>
+            <option>Double parking on transit lane</option>
+            <option>Blocking private gate / garage entrance</option>
+            <option>Wrong-side parking in one-way corridor</option>
+            <option>No-parking zone violation</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-pm-slate text-[10px] uppercase mb-1">VEHICLE REGISTRATION (OPTIONAL)</label>
+          <input type="text" id="report-vehicle" placeholder="e.g. KA-05-EX-9921" class="w-full p-2 bg-pm-bg border border-pm-deepBlue/30 text-pm-textPrimary text-xs focus:outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-pm-slate text-[10px] uppercase mb-1">LOCATION CORRIDOR</label>
+          <input type="text" id="report-location" value="80ft Road, Koramangala 6th Block" class="w-full p-2 bg-pm-bg border border-pm-deepBlue/30 text-pm-textPrimary text-xs focus:outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-pm-slate text-[10px] uppercase mb-1">EVIDENCE DESCRIPTION</label>
+          <textarea id="report-desc" rows="2" class="w-full p-2 bg-pm-bg border border-pm-deepBlue/30 text-pm-textPrimary text-xs focus:outline-none" placeholder="Describe the obstruction..."></textarea>
+        </div>
+
+        <div class="p-2 bg-pm-bg border border-dashed border-pm-deepBlue/30 text-center text-[10px] text-pm-slate cursor-pointer hover:bg-white">
+          📷 ATTACH EVIDENCE PHOTO (SIMULATED GPS TIMESTAMP INCLUDED)
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between border-t border-pm-deepBlue/20 pt-4 font-mono text-xs">
+        <button onclick="closeModal('report-modal')" class="pm-btn-secondary">
+          [ CANCEL ]
+        </button>
+        <button onclick="submitCitizenReport()" class="pm-btn-primary bg-pm-terracotta border-pm-terracotta">
+          [ SUBMIT FOR CIVIC REVIEW ]
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- MODAL: HOST 9-STEP ADD PARKING WIZARD                               -->
+  <!-- =================================================================== -->
+  <div id="add-parking-modal" class="fixed inset-0 z-[1000] bg-pm-deepBlue/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="pm-card tech-corner-box bg-white border-2 border-pm-deepBlue max-w-lg w-full p-6 shadow-2xl space-y-4 relative">
+      
+      <div class="flex items-center justify-between border-b-2 border-pm-deepBlue pb-3">
+        <div>
+          <span class="font-mono text-[10px] text-pm-gold font-bold uppercase tracking-widest bg-pm-deepBlue px-2 py-0.5">HOST ONBOARDING WIZARD</span>
+          <h3 class="font-heading font-bold text-lg text-pm-deepBlue mt-1">List Unused Parking Space</h3>
+        </div>
+        <button onclick="closeModal('add-parking-modal')" class="font-mono text-lg font-bold text-pm-slate hover:text-pm-deepBlue px-2 py-1 border border-pm-slate/20">✕</button>
+      </div>
+
+      <div class="font-mono text-xs space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-pm-slate text-[10px] uppercase mb-1">PARKING TITLE</label>
+            <input type="text" id="new-lot-name" value="Indiranagar 12th Main Open Yard" class="w-full p-2 bg-pm-bg border border-pm-deepBlue/30 text-xs focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-pm-slate text-[10px] uppercase mb-1">URBAN HUB</label>
+            <select id="new-lot-hub" class="w-full p-2 bg-pm-bg border border-pm-deepBlue/30 text-xs focus:outline-none">
+              <option value="indiranagar">Indiranagar</option>
+              <option value="koramangala">Koramangala</option>
+              <option value="hsr">HSR Layout</option>
+              <option value="btm">BTM Layout</option>
+              <option value="jayanagar">Jayanagar</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-pm-slate text-[10px] uppercase mb-1">SPACE TYPE</label>
+            <select class="w-full p-2 bg-pm-bg border border-pm-deepBlue/30 text-xs focus:outline-none">
+              <option>Residential</option>
+              <option>Commercial</option>
+              <option>Garage</option>
+              <option>Open Plot</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-pm-slate text-[10px] uppercase mb-1">TOTAL CAPACITY</label>
+            <input type="number" id="new-lot-capacity" value="12" class="w-full p-2 bg-pm-bg border border-pm-deepBlue/30 text-xs focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-pm-slate text-[10px] uppercase mb-1">BASE RATE (₹/HR)</label>
+            <input type="number" id="new-lot-price" value="40" class="w-full p-2 bg-pm-bg border border-pm-deepBlue/30 text-xs focus:outline-none" />
+          </div>
+        </div>
+
+        <div class="p-3 bg-yellow-50 border border-pm-gold/40 flex items-center justify-between">
+          <div>
+            <span class="font-bold text-pm-deepBlue block">Enable Dynamic Pricing (1.0x – 1.5x)</span>
+            <span class="text-[10px] text-pm-slate">Automatically optimize earnings during high demand</span>
+          </div>
+          <input type="checkbox" id="new-lot-dynamic" checked class="w-4 h-4 text-pm-deepBlue cursor-pointer" />
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between border-t border-pm-deepBlue/20 pt-4 font-mono text-xs">
+        <button onclick="closeModal('add-parking-modal')" class="pm-btn-secondary">
+          [ CANCEL ]
+        </button>
+        <button onclick="publishNewParkingLot()" class="pm-btn-primary">
+          [ PUBLISH TO PARKMITRA NETWORK ]
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="bg-pm-deepBlue text-white border-t border-white/10 mt-12 py-6 font-mono text-xs">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <span class="text-pm-gold font-bold text-sm">⌖ PARKMITRA</span>
+        <span class="text-white/40">|</span>
+        <span class="text-white/70">Find it. Park it. Trust it.</span>
+      </div>
+      <div class="text-white/50 text-[11px]">
+        SPOTIT EVOLVED INTO PARKMITRA • 50+ BENGALURU URBAN PARKING NODES • CONTINUITY ENGINE v2.4
+      </div>
+    </div>
+  </footer>
+
+  <!-- =================================================================== -->
+  <!-- APPLICATION SCRIPT & 50+ BENGALURU DATASET                          -->
+  <!-- =================================================================== -->
+  <script>
+    // Live Clock Update
+    function updateClock() {
+      const now = new Date();
+      const options = { timeZone: 'Asia/Kolkata', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      document.getElementById('live-clock').innerText = now.toLocaleTimeString('en-IN', options) + ' IST';
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // 50+ Realistic Bengaluru Parking Nodes
+    const BENGALURU_NODES = [
+      // KORAMANGALA (10 nodes)
+      { id: 'blr-km-501', name: 'Koramangala 5th Block Private Parking', hub: 'koramangala', address: '100ft Road, Near Forum Mall Complex', type: 'PRIVATE', price: 40, total: 20, available: 3, confidence: 'HIGH', score: 97, distance: '180m', walk: '3 min', facilities: 'CCTV • Covered • Sensor Live', lat: 12.9352, lon: 77.6245, x: 65, y: 22 },
+      { id: 'blr-km-104', name: 'BBMP Multi-Level Municipal Facility', hub: 'koramangala', address: 'Jyoti Nivas College Road', type: 'GOVERNMENT', price: 20, total: 150, available: 14, confidence: 'HIGH', score: 99, distance: '340m', walk: '5 min', facilities: 'EV Charging • 24/7 Security', lat: 12.9320, lon: 77.6270, x: 32, y: 24 },
+      { id: 'blr-km-302', name: 'Sony World Commercial Plaza Lot', hub: 'koramangala', address: '80ft Road, Sony World Signal Junction', type: 'PRIVATE', price: 50, total: 45, available: 2, confidence: 'MEDIUM', score: 82, distance: '520m', walk: '7 min', facilities: 'Valet • ANPR Barrier', lat: 12.9380, lon: 77.6220, x: 68, y: 72 },
+      { id: 'blr-km-904', name: '80ft Road Fire Hydrant Clearance Bay', hub: 'koramangala', address: '80ft Road, Koramangala 6th Block', type: 'INCIDENT', price: 80, total: 10, available: 0, confidence: 'UNDER_REVIEW', score: 42, distance: '650m', walk: '9 min', facilities: 'RESTRICTED EMERGENCY BAY', lat: 12.9420, lon: 77.6200, x: 22, y: 76 },
+      { id: 'blr-km-505', name: 'Raheja Arcade Visitor Garage', hub: 'koramangala', address: 'Koramangala Industrial Layout', type: 'PRIVATE', price: 45, total: 60, available: 12, confidence: 'HIGH', score: 95, distance: '410m', walk: '6 min', facilities: 'Covered • Security Attendant', lat: 12.9335, lon: 77.6189, x: 45, y: 35 },
+      { id: 'blr-km-606', name: 'Koramangala Club Road Surface Lot', hub: 'koramangala', address: 'Club Road, 6th Block', type: 'PRIVATE', price: 35, total: 30, available: 5, confidence: 'HIGH', score: 94, distance: '590m', walk: '8 min', facilities: 'Open Lot • Tree Canopy', lat: 12.9372, lon: 77.6261, x: 75, y: 45 },
+      { id: 'blr-km-707', name: 'Wipro Park Perimeter Smart Bay', hub: 'koramangala', address: '80ft Road, 1st Block', type: 'GOVERNMENT', price: 30, total: 25, available: 8, confidence: 'HIGH', score: 96, distance: '750m', walk: '10 min', facilities: 'Curbside Sensor Tracked', lat: 12.9298, lon: 77.6334, x: 82, y: 80 },
+      { id: 'blr-km-808', name: 'Bethany High Community Lot', hub: 'koramangala', address: 'Sarjapur Main Road', type: 'COMMUNITY', price: 25, total: 40, available: 18, confidence: 'HIGH', score: 98, distance: '820m', walk: '11 min', facilities: 'Weekend / Off-Hours Gate', lat: 12.9312, lon: 77.6295, x: 55, y: 85 },
+      { id: 'blr-km-909', name: 'Epicure Hospitality Deck', hub: 'koramangala', address: '100ft Road, Koramangala 4th Block', type: 'PRIVATE', price: 60, total: 35, available: 4, confidence: 'MEDIUM', score: 85, distance: '380m', walk: '5 min', facilities: 'Valet Service • Camera Link', lat: 12.9366, lon: 77.6288, x: 62, y: 55 },
+      { id: 'blr-km-110', name: 'St. John’s Hospital Visitor Bay', hub: 'koramangala', address: 'Hosur Road, Koramangala 2nd Block', type: 'GOVERNMENT', price: 20, total: 200, available: 45, confidence: 'HIGH', score: 99, distance: '950m', walk: '13 min', facilities: 'Ambulance Clearance Protected', lat: 12.9275, lon: 77.6202, x: 28, y: 88 },
+
+      // INDIRANAGAR (10 nodes)
+      { id: 'blr-in-101', name: 'Indiranagar Metro Park & Ride Deck', hub: 'indiranagar', address: 'CMH Road Metro Station', type: 'GOVERNMENT', price: 25, total: 120, available: 11, confidence: 'HIGH', score: 98, distance: '120m', walk: '2 min', facilities: 'Direct Metro Access', lat: 12.9784, lon: 77.6433, x: 50, y: 30 },
+      { id: 'blr-in-102', name: '100ft Road Luxury Retail Parking', hub: 'indiranagar', address: '100ft Road, HAL 2nd Stage', type: 'PRIVATE', price: 60, total: 50, available: 6, confidence: 'HIGH', score: 97, distance: '260m', walk: '4 min', facilities: 'Hydraulic Lift Deck', lat: 12.9715, lon: 77.6412, x: 60, y: 40 },
+      { id: 'blr-in-103', name: '12th Main Gastronomy Plaza', hub: 'indiranagar', address: '12th Main Road, Indiranagar', type: 'PRIVATE', price: 50, total: 40, available: 1, confidence: 'MEDIUM', score: 80, distance: '390m', walk: '5 min', facilities: 'Evening Attendant • ANPR', lat: 12.9698, lon: 77.6455, x: 70, y: 50 },
+      { id: 'blr-in-104', name: 'Defense Colony Gated Society Bay', hub: 'indiranagar', address: 'Defense Colony, 1st Main', type: 'COMMUNITY', price: 35, total: 15, available: 4, confidence: 'HIGH', score: 96, distance: '450m', walk: '6 min', facilities: 'Quiet Gated Perimeter', lat: 12.9752, lon: 77.6468, x: 40, y: 60 },
+      { id: 'blr-in-105', name: 'CMH Municipal Commercial Yard', hub: 'indiranagar', address: 'Chinmaya Mission Hospital Rd', type: 'GOVERNMENT', price: 20, total: 80, available: 9, confidence: 'HIGH', score: 99, distance: '310m', walk: '4 min', facilities: 'BBMP Barcode Stanchion', lat: 12.9790, lon: 77.6389, x: 30, y: 45 },
+      { id: 'blr-in-106', name: 'HAL 2nd Stage Corporate Yard', hub: 'indiranagar', address: 'Old Airport Road Approach', type: 'PRIVATE', price: 40, total: 90, available: 22, confidence: 'HIGH', score: 95, distance: '780m', walk: '10 min', facilities: 'Weekend Open Access', lat: 12.9645, lon: 77.6480, x: 75, y: 70 },
+      { id: 'blr-in-107', name: 'Indiranagar Club Road Stanchion', hub: 'indiranagar', address: 'Indiranagar Club Road', type: 'PRIVATE', price: 30, total: 25, available: 3, confidence: 'HIGH', score: 94, distance: '620m', walk: '8 min', facilities: 'Ultrasonic Bay Sensors', lat: 12.9730, lon: 77.6492, x: 55, y: 65 },
+      { id: 'blr-in-108', name: 'BDA Complex Indiranagar Multilevel', hub: 'indiranagar', address: 'BDA Complex, CMH Road', type: 'GOVERNMENT', price: 25, total: 110, available: 19, confidence: 'HIGH', score: 99, distance: '280m', walk: '4 min', facilities: 'Multi-Story Ramp Access', lat: 12.9805, lon: 77.6415, x: 45, y: 25 },
+      { id: 'blr-in-109', name: '100ft Road North Dining Deck', hub: 'indiranagar', address: 'Near Domlur Flyover End', type: 'PRIVATE', price: 55, total: 30, available: 0, confidence: 'MEDIUM', score: 84, distance: '850m', walk: '11 min', facilities: 'High Turnover Bay', lat: 12.9660, lon: 77.6420, x: 65, y: 75 },
+      { id: 'blr-in-110', name: 'Double Road Strict Tow Zone', hub: 'indiranagar', address: 'Double Road, Indiranagar', type: 'INCIDENT', price: 100, total: 10, available: 0, confidence: 'UNDER_REVIEW', score: 38, distance: '490m', walk: '7 min', facilities: 'NO PARKING • ENFORCED', lat: 12.9740, lon: 77.6360, x: 35, y: 55 },
+
+      // HSR LAYOUT (10 nodes)
+      { id: 'blr-hsr-201', name: '27th Main High Street Commercial Bay', hub: 'hsr', address: '27th Main, Sector 1, HSR', type: 'PRIVATE', price: 40, total: 75, available: 8, confidence: 'HIGH', score: 97, distance: '190m', walk: '3 min', facilities: 'Mobile App Reserve Ready', lat: 12.9125, lon: 77.6490, x: 52, y: 38 },
+      { id: 'blr-hsr-202', name: 'BDA Complex Sector 6 Multilevel', hub: 'hsr', address: 'BDA Complex, Sector 6, HSR', type: 'GOVERNMENT', price: 20, total: 160, available: 26, confidence: 'HIGH', score: 99, distance: '310m', walk: '4 min', facilities: '2-Wheeler + 4-Wheeler Floor', lat: 12.9090, lon: 77.6420, x: 38, y: 42 },
+      { id: 'blr-hsr-203', name: 'Agara Lake Promenade Visitor Lot', hub: 'hsr', address: 'Outer Ring Road, Agara', type: 'GOVERNMENT', price: 20, total: 100, available: 31, confidence: 'HIGH', score: 98, distance: '640m', walk: '8 min', facilities: 'Eco-Park Shaded Lots', lat: 12.9210, lon: 77.6520, x: 72, y: 28 },
+      { id: 'blr-hsr-204', name: '19th Main Startups Corridor Deck', hub: 'hsr', address: '19th Main Road, Sector 4', type: 'PRIVATE', price: 45, total: 50, available: 5, confidence: 'HIGH', score: 95, distance: '430m', walk: '6 min', facilities: 'Fintech Hub Basement Bay', lat: 12.9140, lon: 77.6380, x: 42, y: 52 },
+      { id: 'blr-hsr-205', name: 'Sector 3 Club Visitor Deck', hub: 'hsr', address: '14th Main, Sector 3', type: 'COMMUNITY', price: 35, total: 40, available: 7, confidence: 'HIGH', score: 96, distance: '550m', walk: '7 min', facilities: 'Boom Barrier Access', lat: 12.9105, lon: 77.6330, x: 30, y: 65 },
+      { id: 'blr-hsr-206', name: 'Sector 7 Teachers Colony Smart Lot', hub: 'hsr', address: 'Sector 7, HSR Layout', type: 'PRIVATE', price: 30, total: 25, available: 10, confidence: 'HIGH', score: 94, distance: '710m', walk: '9 min', facilities: 'EV Fast Charger Equipped', lat: 12.9030, lon: 77.6465, x: 62, y: 78 },
+      { id: 'blr-hsr-207', name: '24th Main Commercial Stanchion', hub: 'hsr', address: '24th Main Road, Sector 2', type: 'PRIVATE', price: 35, total: 30, available: 2, confidence: 'MEDIUM', score: 83, distance: '380m', walk: '5 min', facilities: 'Parallel Sensor Stanchions', lat: 12.9118, lon: 77.6545, x: 78, y: 48 },
+      { id: 'blr-hsr-208', name: 'Sector 2 Community Ground Lot', hub: 'hsr', address: 'Near Sector 2 Park, HSR', type: 'GOVERNMENT', price: 20, total: 45, available: 14, confidence: 'HIGH', score: 97, distance: '820m', walk: '11 min', facilities: 'Open Community Lot', lat: 12.9160, lon: 77.6580, x: 85, y: 35 },
+      { id: 'blr-hsr-209', name: 'ORR Silk Board Intermodal Transit Yard', hub: 'hsr', address: 'Silk Board Junction, ORR', type: 'GOVERNMENT', price: 30, total: 180, available: 24, confidence: 'HIGH', score: 99, distance: '900m', walk: '12 min', facilities: 'Metro Interchange Feeder', lat: 12.9175, lon: 77.6235, x: 20, y: 30 },
+      { id: 'blr-hsr-210', name: 'Sector 5 Jogging Perimeter Clear Zone', hub: 'hsr', address: 'Sector 5 Ring Park', type: 'INCIDENT', price: 90, total: 10, available: 0, confidence: 'UNDER_REVIEW', score: 40, distance: '600m', walk: '8 min', facilities: 'PEDESTRIAN ONLY ZONE', lat: 12.9065, lon: 77.6370, x: 45, y: 70 },
+
+      // BTM LAYOUT (10 nodes)
+      { id: 'blr-btm-301', name: 'Udupi Garden Junction Transit Deck', hub: 'btm', address: '16th Main Road, BTM 2nd Stage', type: 'GOVERNMENT', price: 30, total: 90, available: 7, confidence: 'HIGH', score: 97, distance: '210m', walk: '3 min', facilities: 'High Turnover Junction Lot', lat: 12.9148, lon: 77.6101, x: 48, y: 45 },
+      { id: 'blr-btm-302', name: 'Tavarekere Main Road Market Plaza', hub: 'btm', address: 'Tavarekere Main Rd, 1st Stage', type: 'PRIVATE', price: 35, total: 55, available: 4, confidence: 'HIGH', score: 95, distance: '340m', walk: '5 min', facilities: 'Street Food Strip Parking', lat: 12.9230, lon: 77.6150, x: 55, y: 25 },
+      { id: 'blr-btm-303', name: 'Madiwala Lake View Promenade Deck', hub: 'btm', address: 'Bannerghatta Link Road', type: 'GOVERNMENT', price: 20, total: 120, available: 35, confidence: 'HIGH', score: 98, distance: '720m', walk: '9 min', facilities: 'Waterfront Recreational Lot', lat: 12.9070, lon: 77.6080, x: 35, y: 75 },
+      { id: 'blr-btm-304', name: '7th Cross Gated Commercial Yard', hub: 'btm', address: '7th Cross, BTM 2nd Stage', type: 'PRIVATE', price: 40, total: 30, available: 6, confidence: 'HIGH', score: 96, distance: '410m', walk: '6 min', facilities: 'Consultant Visitor Compound', lat: 12.9120, lon: 77.6140, x: 60, y: 55 },
+      { id: 'blr-btm-305', name: 'Kuvempunagar Public Street Stanchion', hub: 'btm', address: 'Kuvempunagar, BTM 2nd Stage', type: 'GOVERNMENT', price: 25, total: 40, available: 9, confidence: 'HIGH', score: 94, distance: '580m', walk: '7 min', facilities: 'Curbside Digital Meter', lat: 12.9095, lon: 77.6030, x: 25, y: 65 },
+      { id: 'blr-btm-306', name: 'Bannerghatta Flyover Undercroft Bay', hub: 'btm', address: 'Jayadeva Hospital Junction', type: 'GOVERNMENT', price: 20, total: 140, available: 18, confidence: 'HIGH', score: 99, distance: '850m', walk: '11 min', facilities: 'Under-Flyover Shaded Bay', lat: 12.9180, lon: 77.5990, x: 15, y: 40 },
+      { id: 'blr-btm-307', name: '29th Main Commercial Mall Bay', hub: 'btm', address: '29th Main Road, BTM 2nd Stage', type: 'PRIVATE', price: 45, total: 65, available: 11, confidence: 'MEDIUM', score: 86, distance: '490m', walk: '6 min', facilities: 'Retail Basement Deck', lat: 12.9110, lon: 77.6175, x: 70, y: 60 },
+      { id: 'blr-btm-308', name: 'Madiwala Market Early Commuter Lot', hub: 'btm', address: 'Madiwala Market Road', type: 'COMMUNITY', price: 15, total: 80, available: 3, confidence: 'MEDIUM', score: 81, distance: '670m', walk: '8 min', facilities: 'Logistics & Shopper Stalls', lat: 12.9215, lon: 77.6210, x: 80, y: 30 },
+      { id: 'blr-btm-309', name: 'Ring Road Express Tech Park Bay', hub: 'btm', address: '100ft Ring Road, BTM', type: 'PRIVATE', price: 50, total: 85, available: 14, confidence: 'HIGH', score: 96, distance: '510m', walk: '7 min', facilities: 'ANPR Fast Exit', lat: 12.9165, lon: 77.6065, x: 40, y: 35 },
+      { id: 'blr-btm-310', name: 'Silk Board Emergency Ramp Restriction', hub: 'btm', address: 'Silk Board Ramp, BTM', type: 'INCIDENT', price: 100, total: 5, available: 0, confidence: 'UNDER_REVIEW', score: 35, distance: '890m', walk: '12 min', facilities: 'NO STOPPING • TOW CORRIDOR', lat: 12.9185, lon: 77.6240, x: 88, y: 42 },
+
+      // JAYANAGAR (10 nodes)
+      { id: 'blr-jn-401', name: 'Jayanagar 4th Block BDA Shopping Complex', hub: 'jayanagar', address: '11th Main Road, 4th Block', type: 'GOVERNMENT', price: 25, total: 180, available: 15, confidence: 'HIGH', score: 98, distance: '150m', walk: '2 min', facilities: 'Cultural Retail Heart Multi-Tier', lat: 12.9292, lon: 77.5835, x: 50, y: 35 },
+      { id: 'blr-jn-402', name: '11th Main Tree-Lined Smart Bay', hub: 'jayanagar', address: '11th Main, 4th Block Boulevard', type: 'GOVERNMENT', price: 30, total: 45, available: 6, confidence: 'HIGH', score: 97, distance: '280m', walk: '4 min', facilities: 'Sensor Tracked Boulevard', lat: 12.9270, lon: 77.5845, x: 55, y: 45 },
+      { id: 'blr-jn-403', name: 'South End Circle Heritage Transit Deck', hub: 'jayanagar', address: 'South End Circle, 1st Block', type: 'GOVERNMENT', price: 20, total: 90, available: 21, confidence: 'HIGH', score: 99, distance: '450m', walk: '6 min', facilities: 'Metro Feeder Station Yard', lat: 12.9360, lon: 77.5790, x: 30, y: 20 },
+      { id: 'blr-jn-404', name: 'Cool Joint Gourmet Crossroad Lot', hub: 'jayanagar', address: '11th Main & 30th Cross', type: 'PRIVATE', price: 40, total: 25, available: 2, confidence: 'MEDIUM', score: 83, distance: '320m', walk: '4 min', facilities: 'Evening Snack Circle Access', lat: 12.9255, lon: 77.5828, x: 45, y: 55 },
+      { id: 'blr-jn-405', name: 'Ragigudda Temple Hill Pilgrimage Lot', hub: 'jayanagar', address: 'Ragigudda Temple Rd, 9th Block', type: 'COMMUNITY', price: 15, total: 130, available: 42, confidence: 'HIGH', score: 98, distance: '850m', walk: '11 min', facilities: 'Spacious Religious & Community Bay', lat: 12.9190, lon: 77.5910, x: 75, y: 75 },
+      { id: 'blr-jn-406', name: 'Jayanagar 3rd Block East Public Stanchion', hub: 'jayanagar', address: '8th Main, 3rd Block East', type: 'PRIVATE', price: 30, total: 35, available: 9, confidence: 'HIGH', score: 95, distance: '610m', walk: '8 min', facilities: 'Residential Digital Bay', lat: 12.9325, lon: 77.5880, x: 65, y: 30 },
+      { id: 'blr-jn-407', name: 'Ashoka Pillar Cultural Ring Bay', hub: 'jayanagar', address: 'Ashoka Pillar Monument, 2nd Block', type: 'GOVERNMENT', price: 25, total: 50, available: 12, confidence: 'HIGH', score: 96, distance: '540m', walk: '7 min', facilities: 'Heritage Monument Perimeter', lat: 12.9395, lon: 77.5860, x: 60, y: 15 },
+      { id: 'blr-jn-408', name: '5th Block Boulevard Surface Deck', hub: 'jayanagar', address: '10th Main, 5th Block', type: 'PRIVATE', price: 35, total: 40, available: 7, confidence: 'HIGH', score: 94, distance: '680m', walk: '9 min', facilities: 'Clean Gated Community Lot', lat: 12.9215, lon: 77.5815, x: 40, y: 70 },
+      { id: 'blr-jn-409', name: 'RV Road Metro Intermodal Hub', hub: 'jayanagar', address: 'Rashtreeya Vidyalaya Rd Metro', type: 'GOVERNMENT', price: 20, total: 150, available: 33, confidence: 'HIGH', score: 99, distance: '780m', walk: '10 min', facilities: 'Overnight Park & Ride Guarded', lat: 12.9280, lon: 77.5760, x: 20, y: 48 },
+      { id: 'blr-jn-410', name: 'Hospital Emergency Zone 4th T Block', hub: 'jayanagar', address: '18th Main, 4th T Block', type: 'INCIDENT', price: 90, total: 10, available: 0, confidence: 'UNDER_REVIEW', score: 38, distance: '590m', walk: '8 min', facilities: 'HOSPITAL AMBULANCE CORRIDOR', lat: 12.9235, lon: 77.5895, x: 70, y: 65 }
+    ];
+
+    let currentHub = 'all';
+    let currentSpots = [...BENGALURU_NODES];
+    let selectedSpot = BENGALURU_NODES[0];
+
+    // Surface Switcher
+    function switchSurface(surface) {
+      document.getElementById('surface-driver').classList.add('hidden');
+      document.getElementById('surface-host').classList.add('hidden');
+      document.getElementById('surface-civic').classList.add('hidden');
+      document.getElementById('surface-admin').classList.add('hidden');
+
+      document.querySelectorAll('.surface-tab').forEach(b => {
+        b.className = 'surface-tab px-3 py-1.5 text-white/80 hover:text-white hover:bg-white/10 flex items-center gap-1.5 transition-all';
+      });
+
+      document.getElementById('surface-' + surface).classList.remove('hidden');
+      const activeTab = document.getElementById('tab-' + surface);
+      if (activeTab) {
+        activeTab.className = 'surface-tab px-3 py-1.5 bg-pm-gold text-pm-deepBlue font-bold flex items-center gap-1.5 transition-all';
+      }
+    }
+
+    // Render Parking Cards & Blueprint Map Markers
+    function renderSpots() {
+      const cardsList = document.getElementById('parking-cards-list');
+      const markersContainer = document.getElementById('driver-map-markers');
+      cardsList.innerHTML = '';
+      markersContainer.innerHTML = '';
+
+      document.getElementById('spots-count').innerText = currentSpots.length;
+
+      currentSpots.forEach((spot, idx) => {
+        // Render Card
+        const isUnderReview = spot.confidence === 'UNDER_REVIEW';
+        const isHighConfidence = spot.confidence === 'HIGH';
+        const isGov = spot.type === 'GOVERNMENT';
+        const isPvt = spot.type === 'PRIVATE';
+
+        const card = document.createElement('div');
+        card.id = `card-${spot.id}`;
+        card.className = `pm-card p-3.5 border transition-all ${
+          isUnderReview ? 'border-pm-terracotta bg-red-50/10' : 
+          isGov ? 'border-pm-deepBlue/40 border-l-4 border-l-pm-secBlue' : 
+          'pm-gold-accent border-pm-deepBlue/30 hover:border-pm-deepBlue'
+        }`;
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between border-b border-pm-deepBlue/10 pb-2 mb-2">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="font-mono text-[9px] font-bold px-1.5 py-0.2 border ${
+                  isUnderReview ? 'bg-red-100 text-pm-terracotta border-pm-terracotta' :
+                  isGov ? 'bg-blue-50 text-pm-secBlue border-pm-secBlue' :
+                  'bg-pm-gold/20 text-pm-deepBlue border-pm-gold'
+                }">${spot.type} PARKING</span>
+                <span class="font-mono text-[9px] text-pm-slate">NODE #${spot.id.toUpperCase()}</span>
+              </div>
+              <h3 class="font-heading font-bold text-base text-pm-deepBlue leading-tight mt-0.5">${spot.name}</h3>
+              <p class="text-[11px] text-pm-textSecondary font-mono">${spot.address}</p>
+            </div>
+            <div class="text-right">
+              <div class="font-mono font-bold text-base text-pm-deepBlue">₹${spot.price}<span class="text-[10px] font-normal text-pm-slate">/hr</span></div>
+              <span class="font-mono text-[9px] px-1 py-0.2 block mt-0.5 font-bold ${
+                isUnderReview ? 'text-pm-terracotta bg-red-50 border border-red-200' :
+                spot.available > 0 ? 'text-emerald-700 bg-emerald-50 border border-emerald-200' : 'text-pm-slate bg-gray-100'
+              }">${isUnderReview ? 'UNDER REVIEW' : `${spot.available} spots available`}</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 my-2 bg-pm-bg p-2 border border-pm-deepBlue/10 font-mono text-[11px]">
+            <div>
+              <span class="text-[9px] text-pm-slate block">CONFIDENCE SYSTEM</span>
+              <span class="font-bold flex items-center gap-1 ${
+                isUnderReview ? 'text-pm-terracotta' : isHighConfidence ? 'text-pm-deepBlue' : 'text-pm-gold'
+              }">
+                <span class="w-1.5 h-1.5 rounded-full ${
+                  isUnderReview ? 'bg-pm-terracotta' : isHighConfidence ? 'bg-emerald-500' : 'bg-pm-gold'
+                }"></span> ${spot.confidence.replace('_', ' ')}
+              </span>
+              <span class="text-[9px] text-pm-textSecondary block mt-0.5">${spot.score}% successful sessions</span>
+            </div>
+            <div>
+              <span class="text-[9px] text-pm-slate block">PROXIMITY</span>
+              <span class="font-bold text-pm-textPrimary">${spot.distance} · ${spot.walk} walk</span>
+              <span class="text-[9px] text-pm-textSecondary block mt-0.5">${spot.facilities}</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 pt-1">
+            <button onclick="triggerNavigate('${spot.name}')" class="pm-btn-secondary flex-1 text-center py-1.5 text-[11px]">
+              [ NAVIGATE ]
+            </button>
+            <button onclick="${isUnderReview ? `showUnderReviewNotice('${spot.id}')` : `startBookingLifecycle('${spot.id}')`}" class="pm-btn-primary flex-1 text-center py-1.5 text-[11px] ${
+              isUnderReview ? 'bg-pm-slate/40 text-pm-slate border-pm-slate cursor-not-allowed' : ''
+            }">
+              ${isUnderReview ? '[ BLOCKED: REVIEW ]' : '[ PARK HERE ]'}
+            </button>
+          </div>
+        `;
+        cardsList.appendChild(card);
+
+        // Render Blueprint Map Marker (Scaled across viewBox)
+        const marker = document.createElement('div');
+        marker.id = `marker-${spot.id}`;
+        marker.className = `blueprint-marker ${isUnderReview ? 'incident' : isGov ? 'gov' : 'pvt'}`;
+        marker.style.left = `${spot.x}%`;
+        marker.style.top = `${spot.y}%`;
+        marker.onclick = () => selectSpotCard(spot.id);
+
+        marker.innerHTML = `
+          <div class="px-1.5 py-0.5 shadow-lg font-mono text-[9px] font-bold flex items-center gap-1 ${
+            isUnderReview ? 'bg-red-950 border border-pm-terracotta text-white' :
+            isGov ? 'bg-pm-deepBlue border border-white text-white' :
+            'bg-white border border-pm-gold text-pm-deepBlue'
+          }">
+            <span class="w-1.5 h-1.5 ${isUnderReview ? 'bg-pm-terracotta' : isGov ? 'bg-pm-secBlue' : 'bg-pm-gold'} inline-block"></span>
+            <span>[${isUnderReview ? '⚠' : 'P'}] ${spot.name.split(' ')[0]} · ₹${spot.price}</span>
+          </div>
+        `;
+        markersContainer.appendChild(marker);
+      });
+    }
+
+    // Filter Hubs
+    function filterByHub(hub) {
+      currentHub = hub;
+      document.querySelectorAll('.hub-pill').forEach(b => {
+        b.className = 'hub-pill px-2.5 py-1 bg-white text-pm-deepBlue border border-pm-deepBlue/30 hover:border-pm-deepBlue whitespace-nowrap';
+      });
+      event.target.className = 'hub-pill px-2.5 py-1 bg-pm-deepBlue text-white font-bold border border-pm-deepBlue whitespace-nowrap';
+
+      if (hub === 'all') {
+        currentSpots = [...BENGALURU_NODES];
+        document.getElementById('spots-area-title').innerText = 'ALL BENGALURU HUBS';
+      } else {
+        currentSpots = BENGALURU_NODES.filter(n => n.hub === hub);
+        document.getElementById('spots-area-title').innerText = hub.toUpperCase() + ' HUB';
+      }
+      renderSpots();
+    }
+
+    // Sort Parking Nodes
+    function sortParking(criteria) {
+      if (criteria === 'price') {
+        currentSpots.sort((a, b) => a.price - b.price);
+      } else if (criteria === 'confidence') {
+        currentSpots.sort((a, b) => b.score - a.score);
+      } else {
+        currentSpots = BENGALURU_NODES.filter(n => currentHub === 'all' || n.hub === currentHub);
+      }
+      renderSpots();
+    }
+
+    // Select Card & Synchronize Map Reticle
+    function selectSpotCard(spotId) {
+      const spot = BENGALURU_NODES.find(n => n.id === spotId);
+      if (!spot) return;
+      selectedSpot = spot;
+
+      document.querySelectorAll('.pm-card').forEach(c => c.classList.remove('ring-2', 'ring-pm-gold'));
+      document.querySelectorAll('.blueprint-marker').forEach(m => m.classList.remove('active-selected'));
+
+      const targetCard = document.getElementById(`card-${spotId}`);
+      const targetMarker = document.getElementById(`marker-${spotId}`);
+
+      if (targetCard) {
+        targetCard.classList.add('ring-2', 'ring-pm-gold');
+        targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      if (targetMarker) {
+        targetMarker.classList.add('active-selected');
+      }
+
+      document.getElementById('reticle-latlon').innerText = `LAT: ${spot.lat.toFixed(4)}° N | LON: ${spot.lon.toFixed(4)}° E`;
+    }
+
+    // Search Trigger
+    function triggerSearch() {
+      const query = document.getElementById('driver-search-input').value.toLowerCase();
+      if (query.includes('indiranagar')) filterByHub('indiranagar');
+      else if (query.includes('hsr')) filterByHub('hsr');
+      else if (query.includes('btm')) filterByHub('btm');
+      else if (query.includes('jayanagar')) filterByHub('jayanagar');
+      else filterByHub('koramangala');
+    }
+
+    // =========================================================================
+    // BOOKING LIFECYCLE ENGINE: RESERVED -> ACTIVE -> COMPLETED
+    // =========================================================================
+    let activeBooking = {
+      spot: null,
+      step: 1,
+      startTime: null,
+      timerInterval: null,
+      elapsedSeconds: 0
+    };
+
+    function startBookingLifecycle(spotId) {
+      const spot = BENGALURU_NODES.find(n => n.id === spotId) || BENGALURU_NODES[0];
+      activeBooking.spot = spot;
+      activeBooking.step = 1;
+      activeBooking.elapsedSeconds = 0;
+
+      document.getElementById('modal-spot-title').innerText = spot.name;
+      renderBookingModalStep();
+      openModal('booking-modal');
+    }
+
+    function renderBookingModalStep() {
+      const step = activeBooking.step;
+      const spot = activeBooking.spot;
+      const body = document.getElementById('modal-step-body');
+      const progressBar = document.getElementById('progress-bar');
+      const nextBtn = document.getElementById('modal-next-btn');
+
+      document.getElementById('step-label-1').className = step === 1 ? 'text-pm-deepBlue font-bold underline' : 'text-pm-slate';
+      document.getElementById('step-label-2').className = step === 2 ? 'text-pm-deepBlue font-bold underline' : 'text-pm-slate';
+      document.getElementById('step-label-3').className = step === 3 ? 'text-pm-deepBlue font-bold underline' : 'text-pm-slate';
+
+      if (step === 1) {
+        progressBar.style.width = '33%';
+        nextBtn.innerText = '[ LOCK RESERVATION & APPROACH ]';
+        body.innerHTML = `
+          <div class="bg-pm-bg p-3 border border-pm-deepBlue/20 space-y-2">
+            <div class="flex justify-between border-b border-pm-deepBlue/10 pb-1">
+              <span>STATE MACHINE:</span>
+              <span class="font-bold text-pm-deepBlue bg-yellow-100 text-yellow-800 px-1 border border-yellow-300">1. RESERVED (15-MIN GRACE HOLD)</span>
+            </div>
+            <div class="flex justify-between"><span>BASE TARIFF:</span><span class="font-bold">₹${spot.price}/hr</span></div>
+            <div class="flex justify-between"><span>DRIVER VEHICLE:</span><span class="font-bold">HONDA CITY (KA01XX1234)</span></div>
+            <div class="flex justify-between"><span>SPATIAL GEOFENCE:</span><span class="font-bold text-emerald-700">LOCKED (WITHIN ${spot.distance})</span></div>
+          </div>
+          
+          <div class="text-center py-3 bg-white border border-pm-deepBlue/20">
+            <div class="font-mono text-[10px] text-pm-slate mb-1">DYNAMIC ANPR ENTRANCE QR TOKEN</div>
+            <div class="w-28 h-28 mx-auto bg-pm-deepBlue/10 border-2 border-pm-deepBlue flex items-center justify-center font-mono text-xl font-bold text-pm-deepBlue tracking-widest">
+              PM-4092
+            </div>
+            <span class="text-[10px] text-pm-slate mt-1 block">Scan at entry barrier or automatic license-plate verification</span>
+          </div>
+        `;
+      } else if (step === 2) {
+        progressBar.style.width = '66%';
+        nextBtn.innerText = '[ CHECKOUT & PAY ]';
+        body.innerHTML = `
+          <div class="bg-emerald-50 p-3 border border-emerald-300 space-y-2 text-emerald-900">
+            <div class="flex justify-between border-b border-emerald-200 pb-1">
+              <span>STATE MACHINE:</span>
+              <span class="font-bold bg-emerald-600 text-white px-1.5 py-0.5">2. ACTIVE SESSION PARKED</span>
+            </div>
+            <div class="flex justify-between"><span>ENTRY TIMESTAMP:</span><span class="font-bold">JUST NOW (14:20:12 IST)</span></div>
+            <div class="flex justify-between"><span>ULTRASONIC BAY STATUS:</span><span class="font-bold">BAY B-04 OCCUPIED (Δd = 0.4m)</span></div>
+            <div class="flex justify-between items-center pt-1 border-t border-emerald-200">
+              <span>ACTIVE SESSION ELAPSED:</span>
+              <span id="session-timer-display" class="font-mono text-base font-bold text-pm-deepBlue bg-white px-2 py-0.5 border border-emerald-300">00:01:24</span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between p-2.5 bg-pm-bg border border-pm-deepBlue/20">
+            <div>
+              <span class="text-[10px] text-pm-slate block">PRICING ACCUMULATOR</span>
+              <span class="font-bold text-pm-deepBlue">1 Hour Tier: ₹${spot.price}.00</span>
+            </div>
+            <button onclick="extendBooking()" class="pm-btn-secondary py-1 px-3 text-[10px]">
+              + EXTEND PARKING (+30 MINS)
+            </button>
+          </div>
+        `;
+      } else if (step === 3) {
+        progressBar.style.width = '100%';
+        nextBtn.innerText = '[ FINISH & DISMISS ]';
+        const platformFee = 5;
+        const tax = Math.round(spot.price * 0.18);
+        const total = spot.price + platformFee + tax;
+
+        body.innerHTML = `
+          <div class="bg-pm-bg p-4 border-2 border-pm-deepBlue space-y-3">
+            <div class="flex justify-between border-b-2 border-pm-deepBlue pb-2">
+              <span class="font-bold text-pm-deepBlue">3. CHECKOUT & VERIFIED RECEIPT</span>
+              <span class="bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 font-bold">SETTLED</span>
+            </div>
+
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-pm-textSecondary"><span>Parking Duration (1 hr):</span><span>₹${spot.price}.00</span></div>
+              <div class="flex justify-between text-pm-textSecondary"><span>ParkMitra Civic Platform Fee:</span><span>₹${platformFee}.00</span></div>
+              <div class="flex justify-between text-pm-textSecondary"><span>GST (18%):</span><span>₹${tax}.00</span></div>
+              <div class="flex justify-between font-bold text-pm-deepBlue border-t border-pm-deepBlue/20 pt-1 text-sm">
+                <span>TOTAL PAID:</span>
+                <span>₹${total}.00</span>
+              </div>
+            </div>
+
+            <div class="p-2 bg-white border border-pm-deepBlue/20 text-[10px] text-pm-textSecondary space-y-0.5">
+              <div class="flex justify-between"><span>Payment Protocol:</span><span class="font-bold text-pm-gold">TRUST ENGINE DIRECT</span></div>
+              <div class="flex justify-between"><span>Ledger Anchor:</span><span class="font-bold">0x88F...4210B</span></div>
+              <div>✓ Receipt pushed to Jays' account & BBMP Municipal Mobility Portal.</div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function advanceBookingStep() {
+      if (activeBooking.step === 1) {
+        activeBooking.step = 2;
+        renderBookingModalStep();
+        // Start simulated timer
+        if (activeBooking.timerInterval) clearInterval(activeBooking.timerInterval);
+        activeBooking.timerInterval = setInterval(() => {
+          activeBooking.elapsedSeconds += 1;
+          const mins = String(Math.floor(activeBooking.elapsedSeconds / 60)).padStart(2, '0');
+          const secs = String(activeBooking.elapsedSeconds % 60).padStart(2, '0');
+          const display = document.getElementById('session-timer-display');
+          if (display) display.innerText = `00:${mins}:${secs}`;
+        }, 1000);
+      } else if (activeBooking.step === 2) {
+        clearInterval(activeBooking.timerInterval);
+        activeBooking.step = 3;
+        renderBookingModalStep();
+        // Update host earnings & civic capacity
+        const earningsElem = document.getElementById('host-today-earnings');
+        if (earningsElem) earningsElem.innerText = '₹1,380';
+      } else {
+        closeModal('booking-modal');
+      }
+    }
+
+    function extendBooking() {
+      alert(`[PARKMITRA ENGINE]\nExtended parking session by 30 minutes for ${activeBooking.spot.name}.\nCapacity held in centralized registry. No penalty incurred.`);
+    }
+
+    // =========================================================================
+    // DEMO SCENARIO 2: PARKING FAILURE & CONTINUITY ENGINE RECOVERY
+    // =========================================================================
+    function triggerFailureRecoveryDemo() {
+      openModal('recovery-modal');
+      // Add event to continuity timeline
+      updateContinuityTimelineWithIncident();
+    }
+
+    function acceptRecoveryLot(lotId) {
+      closeModal('recovery-modal');
+      const recoveredLot = BENGALURU_NODES.find(n => n.id === lotId);
+      alert(`[CONTINUITY ENGINE RECOVERY ACCEPTED]\nSpace secured at: ${recoveredLot.name} (₹${recoveredLot.price}/hr).\nGoodwill credit applied. Route guidance engaged.`);
+      startBookingLifecycle(lotId);
+    }
+
+    // =========================================================================
+    // DEMO SCENARIO 3: HOST ADD PARKING & DYNAMIC PRICING
+    // =========================================================================
+    function openAddParkingWizard() {
+      openModal('add-parking-modal');
+    }
+
+    function publishNewParkingLot() {
+      const name = document.getElementById('new-lot-name').value;
+      const hub = document.getElementById('new-lot-hub').value;
+      const capacity = parseInt(document.getElementById('new-lot-capacity').value) || 10;
+      const price = parseInt(document.getElementById('new-lot-price').value) || 40;
+
+      const newId = `blr-${hub}-${Date.now().toString().slice(-3)}`;
+      const newSpot = {
+        id: newId,
+        name: name,
+        hub: hub,
+        address: `${name}, ${hub.toUpperCase()}`,
+        type: 'PRIVATE',
+        price: price,
+        total: capacity,
+        available: capacity,
+        confidence: 'HIGH',
+        score: 100,
+        distance: '150m',
+        walk: '2 min',
+        facilities: 'Newly Listed • Verified Anchor',
+        lat: 12.9350,
+        lon: 77.6240,
+        x: 50,
+        y: 50
+      };
+
+      BENGALURU_NODES.unshift(newSpot);
+      closeModal('add-parking-modal');
+      alert(`[PARKMITRA MARKETPLACE]\nSuccessfully published: "${name}"\nCapacity: ${capacity} bays\nDynamic pricing multiplier active. Driver reservations open.`);
+      filterByHub(hub);
+      switchSurface('driver');
+    }
+
+    function simulateDriverBooking(lotId) {
+      alert(`[HOST LIVE OCCUPANCY]\nDriver reserved space at Node #${lotId}!\nOccupancy shifted from 80% to 85%.\nDynamic pricing tier moved to 1.25x.`);
+      const vehiclesElem = document.getElementById('host-active-vehicles');
+      if (vehiclesElem) vehiclesElem.innerText = '8 active';
+    }
+
+    // =========================================================================
+    // AUTOMATED MASTER DEMO RUNNER
+    // =========================================================================
+    function runSelectedDemo(scenario) {
+      if (!scenario) return;
+
+      const banner = document.getElementById('demo-banner');
+      const bannerText = document.getElementById('demo-banner-text');
+      banner.classList.remove('hidden');
+
+      if (scenario === 'demo1') {
+        bannerText.innerText = "SCENARIO 1: Driver Jays (KA01XX1234) End-to-End Discovery, QR Check-In, Active Session & Receipt";
+        switchSurface('driver');
+        filterByHub('koramangala');
+        selectSpotCard('blr-km-501');
+        setTimeout(() => startBookingLifecycle('blr-km-501'), 400);
+      } else if (scenario === 'demo2') {
+        bannerText.innerText = "SCENARIO 2: Parking Failure -> Continuity Engine Evidence, Low Confidence, Recovery Alternatives & Credit";
+        switchSurface('driver');
+        triggerFailureRecoveryDemo();
+      } else if (scenario === 'demo3') {
+        bannerText.innerText = "SCENARIO 3: Host 9-Step Onboarding Wizard, Dynamic Pricing Multipliers & Real-Time Monetization";
+        switchSurface('host');
+        openAddParkingWizard();
+      }
+    }
+
+    function dismissDemoBanner() {
+      document.getElementById('demo-banner').classList.add('hidden');
+      document.getElementById('demo-scenario-select').value = '';
+    }
+
+    // Modal Helpers
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    // Citizen Street Report Trigger
+    function openCitizenReportModal() {
+      openModal('report-modal');
+    }
+
+    function submitCitizenReport() {
+      const category = document.getElementById('report-category').value;
+      const vehicle = document.getElementById('report-vehicle').value || 'KA-05-EX-9921';
+      closeModal('report-modal');
+      alert(`[CIVIC INCIDENT SUBMITTED]\nReported: ${category}\nVehicle: ${vehicle}\nStatus: SUBMITTED ➔ VALIDATING\nForwarded to BBMP Urban Command Centre for officer dispatch.`);
+    }
+
+    function dispatchEnforcement(incId) {
+      alert(`[CIVIC ENFORCEMENT DISPATCHED]\nSquad #MOB-04 assigned to ${incId}.\nMobile ticket and GPS geo-corridor dispatched.`);
+    }
+
+    function reinstateParkingLot(lotId) {
+      alert(`[ADMIN AUDIT LOG]\nParking lot #${lotId} reinstated by Municipal Admin.\nStatus moved from UNDER_REVIEW to ACTIVE.\nReliability recomputed: 42% ➔ 89%. Search availability restored.`);
+    }
+
+    function resolveDisputeCase(caseId) {
+      alert(`[ADMIN DISPUTE DESK]\nCase #${caseId} approved and resolved.\nDriver Jays goodwill credit confirmed.\nImmutable event logged to Continuity Engine.`);
+    }
+
+    function showUnderReviewNotice(lotId) {
+      alert(`[PARKING UNDER REVIEW]\nNode #${lotId} is temporarily suspended from new bookings due to active citizen reports.\nOur municipal team is investigating.`);
+    }
+
+    function triggerNavigate(locationName) {
+      alert(`[PARKMITRA SPATIAL ROUTE]\nNavigating to: ${locationName}\nAccuracy: ±1.2m. Real-time corridor sensors synced.`);
+    }
+
+    // Populate Initial Continuity Timeline
+    function renderContinuityTimeline() {
+      const container = document.getElementById('continuity-timeline-events');
+      container.innerHTML = `
+        <div class="bg-pm-bg p-3 border border-pm-deepBlue/30 relative">
+          <div class="flex items-center justify-between text-[10px] text-pm-slate border-b border-pm-deepBlue/10 pb-1 mb-2">
+            <span>STEP 01</span>
+            <span>14:20:05 IST</span>
+          </div>
+          <div class="font-bold text-pm-deepBlue text-sm">GEOFENCE LOCK</div>
+          <p class="text-[11px] text-pm-textSecondary mt-1">Vehicle GPS matched within ±1.2m spatial boundary of Koramangala 5th Block Node.</p>
+          <div class="mt-2 text-[10px] text-emerald-700 bg-emerald-50 p-1 border border-emerald-200">
+            ✓ SPATIAL PROOF OK
+          </div>
+        </div>
+
+        <div class="bg-pm-bg p-3 border border-pm-deepBlue/30 relative">
+          <div class="flex items-center justify-between text-[10px] text-pm-slate border-b border-pm-deepBlue/10 pb-1 mb-2">
+            <span>STEP 02</span>
+            <span>14:20:12 IST</span>
+          </div>
+          <div class="font-bold text-pm-deepBlue text-sm">ANPR CAMERA CHECK</div>
+          <p class="text-[11px] text-pm-textSecondary mt-1">Camera #CAM-8849 captured plate registration KA01XX1234 at entry barrier.</p>
+          <div class="mt-2 text-[10px] text-emerald-700 bg-emerald-50 p-1 border border-emerald-200">
+            ✓ OPTICAL CONFIRMED
+          </div>
+        </div>
+
+        <div class="bg-pm-bg p-3 border border-pm-deepBlue/30 relative">
+          <div class="flex items-center justify-between text-[10px] text-pm-slate border-b border-pm-deepBlue/10 pb-1 mb-2">
+            <span>STEP 03</span>
+            <span>14:20:15 IST</span>
+          </div>
+          <div class="font-bold text-pm-deepBlue text-sm">BAY ULTRASONIC PING</div>
+          <p class="text-[11px] text-pm-textSecondary mt-1">Sensor #BAY-B04 telemetry shifted state to OCCUPIED (Distance Δd = 0.42m).</p>
+          <div class="mt-2 text-[10px] text-emerald-700 bg-emerald-50 p-1 border border-emerald-200">
+            ✓ SENSOR HEARTBEAT LIVE
+          </div>
+        </div>
+
+        <div class="bg-pm-bg p-3 border border-pm-gold/80 relative bg-yellow-50/20">
+          <div class="flex items-center justify-between text-[10px] text-pm-slate border-b border-pm-deepBlue/10 pb-1 mb-2">
+            <span>STEP 04</span>
+            <span>14:20:18 IST</span>
+          </div>
+          <div class="font-bold text-pm-deepBlue text-sm">CONTINUITY ANCHOR</div>
+          <p class="text-[11px] text-pm-textSecondary mt-1">Session state committed to Municipal Mobility Ledger with zero-knowledge proof.</p>
+          <div class="mt-2 text-[10px] text-pm-deepBlue bg-pm-gold/30 p-1 border border-pm-gold font-bold">
+            ★ TOKEN VERIFIED
+          </div>
+        </div>
+      `;
+    }
+
+    function updateContinuityTimelineWithIncident() {
+      const container = document.getElementById('continuity-timeline-events');
+      container.innerHTML += `
+        <div class="bg-red-50 p-3 border-2 border-pm-terracotta relative col-span-full">
+          <div class="flex items-center justify-between text-[10px] text-pm-terracotta border-b border-pm-terracotta/20 pb-1 mb-2">
+            <span>INCIDENT EVENT #EV-981</span>
+            <span>JUST NOW</span>
+          </div>
+          <div class="font-bold text-pm-terracotta text-sm">RECOVERY TRIGGERED — SPACE OCCUPIED</div>
+          <p class="text-[11px] text-pm-textSecondary mt-1">Evidence recorded: GPS coordinate match confirmed, optical report submitted. Holding space at BBMP Multi-Level assigned automatically.</p>
+        </div>
+      `;
+    }
+
+    // Initial Load
+    window.addEventListener('DOMContentLoaded', () => {
+      renderSpots();
+      renderContinuityTimeline();
+    });
+  </script>
+</body>
+</html>
